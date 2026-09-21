@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { Flame, Sparkles, User } from 'lucide-react';
 
 export default function Header() {
-  const { data, activeTab, setActiveTab } = useApp();
+  const { data, openProfilePage, currentPage } = useApp();
 
   const todayStr = new Date().toLocaleDateString('en-US', {
     weekday: 'short',
@@ -31,15 +31,19 @@ export default function Header() {
           <span>{data.water.streak || 5}d Streak</span>
         </div>
 
-        {/* Profile DP Button navigating to Profile Tab */}
+        {/* Profile DP Button navigating to dedicated Profile Page */}
         <button
-          className={`header-profile-dp ${activeTab === 'profile' ? 'active' : ''}`}
-          onClick={() => setActiveTab('profile')}
-          aria-label="Profile & Settings"
-          title="Open Profile & Settings"
+          className={`header-profile-dp ${currentPage === 'profile' ? 'active' : ''}`}
+          onClick={openProfilePage}
+          aria-label="Open Profile"
+          title="Open Profile"
         >
           <div className="header-avatar-circle">
-            <User size={16} className="header-avatar-icon" />
+            {data.profile.avatarUrl ? (
+              <img src={data.profile.avatarUrl} alt="Avatar" className="header-avatar-img" />
+            ) : (
+              <User size={16} className="header-avatar-icon" />
+            )}
           </div>
         </button>
       </div>

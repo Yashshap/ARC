@@ -3,7 +3,7 @@
   "appName": "VitalSync",
   "webDir": "dist",
   "server": {
-    "url": "http://192.168.1.5:5173",
+    "url": "http://localhost:5173",
     "cleartext": true
   }
 }

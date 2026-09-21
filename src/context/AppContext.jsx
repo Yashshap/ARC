@@ -429,6 +429,20 @@ const INITIAL_DATA = {
     targetWeight: 69.0, // kg
     goal: 'Lean Muscle & Metabolic Health',
     activityLevel: 'Active (4-5 days/week)',
+    avatarUrl: null,
+  },
+  notifications: {
+    enabled: true,
+    hydration: true,
+    medications: true,
+    workouts: true,
+    sound: true,
+  },
+  userRating: null,
+  auth: {
+    isLoggedIn: true,
+    email: 'alex.rivera@vitalsync.health',
+    joinedDate: 'January 2026',
   }
 };
 
@@ -472,6 +486,15 @@ export function AppProvider({ children }) {
             ...INITIAL_DATA.profile,
             ...(parsed.profile || {}),
           },
+          notifications: {
+            ...INITIAL_DATA.notifications,
+            ...(parsed.notifications || {}),
+          },
+          userRating: parsed.userRating || null,
+          auth: {
+            ...INITIAL_DATA.auth,
+            ...(parsed.auth || {}),
+          },
         };
       }
     } catch (e) {
@@ -481,7 +504,28 @@ export function AppProvider({ children }) {
   });
 
   const [activeTab, setActiveTab] = useState('water');
+  const [currentPage, setCurrentPage] = useState('main'); // 'main' | 'profile' | 'settings'
+  const [previousTab, setPreviousTab] = useState('water');
   const [isFullScreenPage, setIsFullScreenPage] = useState(false);
+
+  const openProfilePage = () => {
+    if (activeTab !== 'profile') {
+      setPreviousTab(activeTab);
+    }
+    setCurrentPage('profile');
+  };
+
+  const closeProfilePage = () => {
+    setCurrentPage('main');
+  };
+
+  const openSettingsPage = () => {
+    setCurrentPage('settings');
+  };
+
+  const closeSettingsPage = () => {
+    setCurrentPage('profile');
+  };
 
   // Persist state changes
   useEffect(() => {
@@ -861,6 +905,68 @@ export function AppProvider({ children }) {
     }
   };
 
+  /* ================= NOTIFICATIONS, RATING & AUTH ACTIONS ================= */
+  const toggleNotification = (key) => {
+    setData(prev => {
+      const current = prev.notifications || INITIAL_DATA.notifications;
+      if (key === 'enabled') {
+        const nextState = !current.enabled;
+        return {
+          ...prev,
+          notifications: {
+            ...current,
+            enabled: nextState,
+          }
+        };
+      }
+      return {
+        ...prev,
+        notifications: {
+          ...current,
+          [key]: !current[key],
+        }
+      };
+    });
+  };
+
+  const saveRating = (ratingData) => {
+    setData(prev => ({
+      ...prev,
+      userRating: {
+        ...ratingData,
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      }
+    }));
+  };
+
+  const logoutUser = () => {
+    setData(prev => ({
+      ...prev,
+      auth: {
+        ...prev.auth,
+        isLoggedIn: false,
+      }
+    }));
+  };
+
+  const loginUser = (email = 'alex.rivera@vitalsync.health') => {
+    setData(prev => ({
+      ...prev,
+      auth: {
+        isLoggedIn: true,
+        email,
+        joinedDate: prev.auth?.joinedDate || 'January 2026',
+      }
+    }));
+  };
+
+  const deleteAccount = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setData(INITIAL_DATA);
+    setCurrentPage('main');
+    setActiveTab('water');
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -899,6 +1005,22 @@ export function AppProvider({ children }) {
         updateProfile,
         resetAllData,
         importData,
+        // Page Navigation
+        currentPage,
+        setCurrentPage,
+        openProfilePage,
+        closeProfilePage,
+        openSettingsPage,
+        closeSettingsPage,
+        previousTab,
+        // Notifications
+        toggleNotification,
+        // Rating
+        saveRating,
+        // Auth & Account
+        logoutUser,
+        loginUser,
+        deleteAccount,
       }}
     >
       {children}
