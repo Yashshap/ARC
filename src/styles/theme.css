@@ -1,0 +1,455 @@
+:root {
+  /* Color Palette - Modern Dark Theme Defaults */
+  --bg-app: #080c14;
+  --bg-surface: #0f172a;
+  --bg-card: rgba(19, 29, 51, 0.75);
+  --bg-card-hover: rgba(28, 41, 71, 0.85);
+  --bg-card-subtle: rgba(255, 255, 255, 0.03);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --border-focus: #6366f1;
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-inverse: #0f172a;
+
+  /* Theme Accents */
+  --accent-primary: #6366f1;
+  --accent-primary-light: #818cf8;
+  --accent-primary-glow: rgba(99, 102, 241, 0.25);
+  
+  /* Category Colors */
+  --color-water: #0284c7;
+  --color-water-light: #38bdf8;
+  --color-water-glow: rgba(14, 165, 233, 0.28);
+  
+  --color-diet: #10b981;
+  --color-diet-light: #34d399;
+  --color-diet-glow: rgba(16, 185, 129, 0.25);
+  --color-protein: #6366f1;
+  --color-carbs: #f59e0b;
+  --color-fats: #ec4899;
+
+  --color-workout: #f97316;
+  --color-workout-light: #fb923c;
+  --color-workout-glow: rgba(249, 115, 22, 0.25);
+
+  --color-care: #a855f7;
+  --color-care-light: #c084fc;
+  --color-care-glow: rgba(168, 85, 247, 0.25);
+  --color-pills: #ec4899;
+
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+
+  /* Elevation & Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.55);
+  --shadow-glow: 0 0 25px var(--accent-primary-glow);
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-full: 9999px;
+
+  /* Font & Spacing */
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  /* Mobile Dimensions */
+  --header-height: 76px;
+  --nav-height: 68px;
+  --safe-bottom: max(16px, env(safe-area-inset-bottom));
+  --safe-top: max(0px, env(safe-area-inset-top));
+}
+
+[data-theme='light'] {
+  --bg-app: #f1f5f9;
+  --bg-surface: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-card-hover: rgba(255, 255, 255, 0.95);
+  --bg-card-subtle: rgba(0, 0, 0, 0.03);
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.15);
+  --border-focus: #4f46e5;
+  
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+/* Base Reset & Core Typography */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-sans);
+  background-color: #000000;
+  color: var(--text-primary);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  overscroll-behavior: none;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000000;
+}
+
+/* Mobile App Frame Shell */
+.app-viewport {
+  width: 100%;
+  max-width: 480px;
+  height: 100%;
+  max-height: 100vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-app);
+  overflow: hidden;
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.7);
+  transition: background-color 0.3s ease;
+}
+
+.app-viewport.fullscreen-mode {
+  height: 100vh;
+  max-height: 100vh;
+  border-radius: 0;
+  border: none;
+}
+
+@media (min-width: 520px) {
+  .app-viewport {
+    height: 94vh;
+    border-radius: 36px;
+    border: 1px solid var(--border-strong);
+    overflow: hidden;
+  }
+  .app-viewport.fullscreen-mode {
+    height: 94vh;
+    border-radius: 36px;
+    border: 1px solid var(--border-strong);
+  }
+}
+
+/* Scrollable Main Area */
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 16px calc(var(--nav-height) + var(--safe-bottom) + 16px) 16px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  background-color: var(--bg-app);
+}
+
+.app-content.fullscreen-content {
+  padding: 0 !important;
+  overscroll-behavior-y: contain;
+}
+
+.app-content::-webkit-scrollbar {
+  width: 4px;
+}
+.app-content::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-full);
+}
+
+/* Card Style Standard */
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.glass-card:active {
+  transform: scale(0.99);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn:active {
+  transform: scale(0.96);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-primary), #4338ca);
+  color: #ffffff;
+  box-shadow: 0 4px 14px var(--accent-primary-glow);
+}
+
+.btn-water {
+  background: linear-gradient(135deg, var(--color-water), #0369a1);
+  color: #ffffff;
+  box-shadow: 0 4px 14px var(--color-water-glow);
+}
+
+.btn-diet {
+  background: linear-gradient(135deg, var(--color-diet), #047857);
+  color: #ffffff;
+  box-shadow: 0 4px 14px var(--color-diet-glow);
+}
+
+.btn-workout {
+  background: linear-gradient(135deg, var(--color-workout), #c2410c);
+  color: #ffffff;
+  box-shadow: 0 4px 14px var(--color-workout-glow);
+}
+
+.btn-care {
+  background: linear-gradient(135deg, var(--color-care), #7e22ce);
+  color: #ffffff;
+  box-shadow: 0 4px 14px var(--color-care-glow);
+}
+
+.btn-secondary {
+  background: var(--bg-card-subtle);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+  background: var(--border-subtle);
+}
+
+.btn-icon {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card-subtle);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-icon:active {
+  transform: scale(0.92);
+}
+
+/* Modal Bottom Sheet */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 480px;
+  background: var(--bg-surface);
+  border-top-left-radius: 28px;
+  border-top-right-radius: 28px;
+  border: 1px solid var(--border-strong);
+  border-bottom: none;
+  padding: 24px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-drag-pill {
+  width: 40px;
+  height: 4px;
+  background: var(--border-strong);
+  border-radius: var(--radius-full);
+  margin: 0 auto 16px auto;
+}
+
+/* Form Inputs */
+.input-group {
+  margin-bottom: 14px;
+}
+
+.input-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input-field {
+  width: 100%;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+@keyframes wave {
+  0% { transform: translateX(0) translateZ(0) scaleY(1); }
+  50% { transform: translateX(-25%) translateZ(0) scaleY(0.85); }
+  100% { transform: translateX(-50%) translateZ(0) scaleY(1); }
+}
+
+/* ==========================================================================
+   Native Slide-Over Sub-Pages (Silky Smooth Zero-Flicker Transitions)
+   ========================================================================== */
+.slide-over-page {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-app);
+  overflow: hidden;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.22);
+  will-change: transform;
+}
+
+.slide-over-page.slide-over-enter {
+  animation: slideOverPageEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.slide-over-page.slide-over-exit {
+  animation: slideOverPageExit 0.24s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  pointer-events: none;
+}
+
+@keyframes slideOverPageEnter {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOverPageExit {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.slide-over-page .diet-details-screen.modern-details-theme,
+.slide-over-page .custom-meal-screen.modern-details-theme,
+.slide-over-page .track-meal-screen.modern-details-theme,
+.slide-over-page .food-edit-screen,
+.slide-over-page .today-workout-screen.modern-details-theme,
+.slide-over-page .active-workout-screen.modern-details-theme {
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  animation: none !important;
+  padding-bottom: 0 !important;
+}
+
+.slide-over-page .food-edit-body,
+.slide-over-page .details-screen-scroll-body,
+.slide-over-page .custom-meal-scroll-body,
+.slide-over-page .today-workout-scroll-body,
+.slide-over-page .active-workout-scroll-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.slide-over-page .details-screen-scroll-body,
+.slide-over-page .custom-meal-scroll-body,
+.slide-over-page .today-workout-scroll-body,
+.slide-over-page .active-workout-scroll-body {
+  padding-bottom: calc(var(--safe-bottom) + 24px);
+}
+
+.slide-over-page .food-edit-body {
+  padding-bottom: calc(var(--safe-bottom) + 96px);
+}
+
+.slide-over-page .food-edit-sticky-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 85;
+}
