@@ -1,14 +1,17 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Sparkles, Pill, Sun, Moon, Plus, Trash2, Check, Clock, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
+import { Sparkles, Pill, Sun, Moon, Plus, Trash2, Check, Clock, ChevronDown, ChevronUp, Pencil, X } from 'lucide-react';
 
 export default function CareAndPillsTab() {
   const {
     data,
     toggleSkinStep,
     addSkinStep,
+    removeSkinStep,
+    updateSkinStep,
     togglePillTaken,
     addPill,
+    updatePill,
     removePill
   } = useApp();
 
@@ -30,57 +33,61 @@ export default function CareAndPillsTab() {
   const [pillTime, setPillTime] = useState('09:00 AM');
   const [pillWithFood, setPillWithFood] = useState(true);
 
-  // Long-press options state for pills
-  const longPressTimerRef = useRef(null);
-  const isLongPressTriggered = useRef(false);
-  const [selectedPillForOptions, setSelectedPillForOptions] = useState(null);
+  // Bottom Sheet state for viewing, editing, and deleting a step or pill
+  const [sheetItem, setSheetItem] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedName, setEditedName] = useState('');
+  const [editedTime, setEditedTime] = useState('');
 
-  // Pill confirmation modal state (taking or undoing)
-  const [pillConfirmation, setPillConfirmation] = useState(null);
-
-  const handlePillTouchStart = (pill) => {
-    isLongPressTriggered.current = false;
-    longPressTimerRef.current = setTimeout(() => {
-      isLongPressTriggered.current = true;
-      setSelectedPillForOptions(pill);
-    }, 450);
+  const openDetailCard = (itemConfig) => {
+    setSheetItem(itemConfig);
+    setEditedName(itemConfig.name || '');
+    setEditedTime(itemConfig.time || '');
+    setIsEditing(false);
   };
 
-  const handlePillTouchEnd = () => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-    }
+  const closeDetailCard = () => {
+    setSheetItem(null);
+    setIsEditing(false);
+    setEditedName('');
+    setEditedTime('');
   };
 
-  const handlePillActionClick = (pill) => {
-    if (pill.taken) {
-      setPillConfirmation({
-        pill,
-        action: 'undo',
-        title: 'Undo Medicine',
-        message: `Are you sure you want to mark ${pill.name} as not taken?`,
-        sub: pill.takenAt ? `Recorded as taken at ${pill.takenAt}` : (pill.time ? `Scheduled for ${pill.time}` : null),
-        confirmText: 'Yes, Mark Not Taken',
-        cancelText: 'Cancel'
-      });
-    } else {
-      setPillConfirmation({
-        pill,
-        action: 'take',
-        title: 'Take Medicine',
-        message: `Have you taken ${pill.name}?`,
-        sub: `Scheduled for ${pill.time}${pill.dosage ? ` • ${pill.dosage}` : ''}`,
-        confirmText: 'Yes, Taken',
-        cancelText: 'Cancel'
-      });
-    }
+  const handleStartEdit = () => {
+    setIsEditing(true);
   };
 
-  const handlePillCardClick = (pill) => {
-    if (isLongPressTriggered.current) {
-      return;
+  const handleCancelEdit = () => {
+    if (sheetItem) {
+      setEditedName(sheetItem.name || '');
+      setEditedTime(sheetItem.time || '');
     }
-    handlePillActionClick(pill);
+    setIsEditing(false);
+  };
+
+  const handleSaveEdit = () => {
+    if (!sheetItem || !editedName.trim()) return;
+    const trimmedName = editedName.trim();
+    const trimmedTime = editedTime.trim() || sheetItem.time || '09:00 AM';
+
+    if (sheetItem.type === 'step') {
+      updateSkinStep(sheetItem.routineType, sheetItem.id, trimmedName);
+      setSheetItem(prev => ({ ...prev, name: trimmedName }));
+    } else if (sheetItem.type === 'pill') {
+      updatePill(sheetItem.id, { name: trimmedName, time: trimmedTime });
+      setSheetItem(prev => ({ ...prev, name: trimmedName, time: trimmedTime }));
+    }
+    setIsEditing(false);
+  };
+
+  const handleDeleteItem = () => {
+    if (!sheetItem) return;
+    if (sheetItem.type === 'step') {
+      removeSkinStep(sheetItem.routineType, sheetItem.id);
+    } else if (sheetItem.type === 'pill') {
+      removePill(sheetItem.id);
+    }
+    closeDetailCard();
   };
 
   // Skincare calculations
@@ -206,20 +213,41 @@ export default function CareAndPillsTab() {
                     <div
                       key={step.id}
                       className={`care-step-item glass-card ${step.completed ? 'completed' : ''}`}
-                      onClick={() => toggleSkinStep('AM', step.id)}
+                      onClick={() => openDetailCard({
+                        type: 'step',
+                        routineType: 'AM',
+                        id: step.id,
+                        name: step.step,
+                        completed: step.completed,
+                      })}
+                      role="button"
+                      tabIndex={0}
                     >
-                      <div className={`step-check-circle ${step.completed ? 'checked' : ''}`}>
-                        {step.completed ? <Check size={14} /> : <span className="step-num">{idx + 1}</span>}
+                      <div className="step-num-badge">
+                        <span className="step-num">{idx + 1}</span>
                       </div>
 
                       <div className="step-info">
                         <div className="step-row-inline">
-                          <span className="step-name" title={step.step}>
+                          <span className={`step-name ${step.completed ? 'completed-text' : ''}`} title={step.step}>
                             {step.step}
                           </span>
-                          {step.time && (
-                            <span className="step-time-inline">({step.time})</span>
-                          )}
+                        </div>
+                      </div>
+
+                      {/* Radio button to confirm completion */}
+                      <div
+                        className={`item-radio-wrap ${step.completed ? 'checked' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleSkinStep('AM', step.id);
+                        }}
+                        role="radio"
+                        aria-checked={step.completed}
+                        title={step.completed ? "Mark incomplete" : "Confirm completed"}
+                      >
+                        <div className={`item-radio-circle ${step.completed ? 'checked' : ''}`}>
+                          {step.completed && <div className="item-radio-dot" />}
                         </div>
                       </div>
                     </div>
@@ -263,20 +291,41 @@ export default function CareAndPillsTab() {
                     <div
                       key={step.id}
                       className={`care-step-item glass-card ${step.completed ? 'completed' : ''}`}
-                      onClick={() => toggleSkinStep('PM', step.id)}
+                      onClick={() => openDetailCard({
+                        type: 'step',
+                        routineType: 'PM',
+                        id: step.id,
+                        name: step.step,
+                        completed: step.completed,
+                      })}
+                      role="button"
+                      tabIndex={0}
                     >
-                      <div className={`step-check-circle ${step.completed ? 'checked' : ''}`}>
-                        {step.completed ? <Check size={14} /> : <span className="step-num">{idx + 1}</span>}
+                      <div className="step-num-badge">
+                        <span className="step-num">{idx + 1}</span>
                       </div>
 
                       <div className="step-info">
                         <div className="step-row-inline">
-                          <span className="step-name" title={step.step}>
+                          <span className={`step-name ${step.completed ? 'completed-text' : ''}`} title={step.step}>
                             {step.step}
                           </span>
-                          {step.time && (
-                            <span className="step-time-inline">({step.time})</span>
-                          )}
+                        </div>
+                      </div>
+
+                      {/* Radio button to confirm completion */}
+                      <div
+                        className={`item-radio-wrap ${step.completed ? 'checked' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleSkinStep('PM', step.id);
+                        }}
+                        role="radio"
+                        aria-checked={step.completed}
+                        title={step.completed ? "Mark incomplete" : "Confirm completed"}
+                      >
+                        <div className={`item-radio-circle ${step.completed ? 'checked' : ''}`}>
+                          {step.completed && <div className="item-radio-dot" />}
                         </div>
                       </div>
                     </div>
@@ -314,47 +363,53 @@ export default function CareAndPillsTab() {
             </button>
           </div>
 
-          {/* Pills List - Clean minimalist cards with long-press for options */}
+          {/* Pills List - Tap card to view/edit/delete, radio button to confirm taken */}
           <div className="pills-list">
             {data.care.pills.map((pill) => (
               <div
                 key={pill.id}
                 className={`pill-card-compact glass-card ${pill.taken ? 'pill-taken' : ''}`}
-                onMouseDown={() => handlePillTouchStart(pill)}
-                onMouseUp={handlePillTouchEnd}
-                onMouseLeave={handlePillTouchEnd}
-                onTouchStart={() => handlePillTouchStart(pill)}
-                onTouchEnd={handlePillTouchEnd}
-                onTouchCancel={handlePillTouchEnd}
-                onClick={() => handlePillCardClick(pill)}
+                onClick={() => openDetailCard({
+                  type: 'pill',
+                  id: pill.id,
+                  name: pill.name,
+                  dosage: pill.dosage,
+                  time: pill.time,
+                  taken: pill.taken,
+                  takenAt: pill.takenAt
+                })}
                 role="button"
                 tabIndex={0}
               >
                 <div className="pill-info-compact">
-                  <span className="pill-name">{pill.name}</span>
+                  <span className={`pill-name ${pill.taken ? 'taken-text' : ''}`}>{pill.name}</span>
+                  <div className="item-sub-desc">
+                    {pill.taken ? (
+                      <span className="item-sub-timestamp">
+                        Taken at {pill.takenAt || pill.time}
+                      </span>
+                    ) : (
+                      <span className="item-sub-timestamp pending">
+                        Scheduled for {pill.time}{pill.dosage ? ` • ${pill.dosage}` : ''}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="pill-actions-compact">
-                  <button
-                    type="button"
-                    className={`btn-pill-action ${pill.taken ? 'btn-pill-taken' : 'btn-pill-take'}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (isLongPressTriggered.current) return;
-                      handlePillActionClick(pill);
-                    }}
-                    title={pill.taken ? `Taken at ${pill.takenAt || pill.time}. Click to undo.` : `Scheduled for ${pill.time}. Click to confirm taking.`}
-                  >
-                    {pill.taken ? (
-                      <>
-                        <Check size={13} /> {pill.takenAt || pill.time}
-                      </>
-                    ) : (
-                      <>
-                        <Clock size={13} /> {pill.time}
-                      </>
-                    )}
-                  </button>
+                {/* Radio button to confirm pill taken */}
+                <div
+                  className={`item-radio-wrap ${pill.taken ? 'checked' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    togglePillTaken(pill.id);
+                  }}
+                  role="radio"
+                  aria-checked={pill.taken}
+                  title={pill.taken ? "Mark not taken" : "Confirm taken"}
+                >
+                  <div className={`item-radio-circle ${pill.taken ? 'checked' : ''}`}>
+                    {pill.taken && <div className="item-radio-dot" />}
+                  </div>
                 </div>
               </div>
             ))}
@@ -362,105 +417,135 @@ export default function CareAndPillsTab() {
         </div>
       )}
 
-      {/* Pill Long-Press Action Modal (Options like Delete or Not Taken) */}
-      {selectedPillForOptions && (
-        <div className="modal-overlay" onClick={() => setSelectedPillForOptions(null)}>
-          <div className="modal-content glass-card pill-options-modal" onClick={(e) => e.stopPropagation()}>
+      {/* Bottom Sheet Card: View, Edit Name (Edit -> Save), and Delete */}
+      {sheetItem && (
+        <div className="modal-overlay" onClick={closeDetailCard}>
+          <div className="modal-content glass-card item-bottom-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="modal-drag-pill" />
-            <div className="modal-header-clean">
-              <h3 className="modal-title">{selectedPillForOptions.name}</h3>
-              <span className="pill-options-status">
-                Status: {selectedPillForOptions.taken ? `Taken at ${selectedPillForOptions.takenAt || selectedPillForOptions.time}` : `Scheduled for ${selectedPillForOptions.time}`}
-              </span>
+
+            <div className="sheet-header-row">
+              <div className="sheet-badge-tag">
+                {sheetItem.type === 'step' ? (
+                  sheetItem.routineType === 'AM' ? (
+                    <><Sun size={14} className="badge-icon-sun" /> Morning Skincare Step</>
+                  ) : (
+                    <><Moon size={14} className="badge-icon-moon" /> Evening Skincare Step</>
+                  )
+                ) : (
+                  <><Pill size={14} className="badge-icon-pill" /> Pill & Vitamin</>
+                )}
+              </div>
+              <button
+                type="button"
+                className="btn-modal-close-round"
+                onClick={closeDetailCard}
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
             </div>
 
-            <div className="pill-options-list">
-              {selectedPillForOptions.taken ? (
-                <button
-                  type="button"
-                  className="btn btn-outline-warning pill-option-btn"
-                  onClick={() => {
-                    const p = selectedPillForOptions;
-                    setSelectedPillForOptions(null);
-                    handlePillActionClick(p);
-                  }}
-                >
-                  <RotateCcw size={16} /> Mark as Not Taken
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="btn btn-care pill-option-btn"
-                  onClick={() => {
-                    const p = selectedPillForOptions;
-                    setSelectedPillForOptions(null);
-                    handlePillActionClick(p);
-                  }}
-                >
-                  <Check size={16} /> Mark as Taken
-                </button>
+            <div className="sheet-field-container">
+              <div className="input-group">
+                <label className="input-label">
+                  {sheetItem.type === 'step' ? 'Step Name' : 'Medication Name'}
+                </label>
+
+                {isEditing ? (
+                  <input
+                    type="text"
+                    className="input-field sheet-name-input-active"
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    placeholder="Enter name..."
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSaveEdit();
+                      }
+                    }}
+                  />
+                ) : (
+                  <div className="sheet-name-display-box">
+                    <span className="sheet-name-text">{sheetItem.name}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* In skincare: No timing or pending context */}
+              {/* In pills: When editing, do not show taken at time; instead show option to edit scheduled time */}
+              {sheetItem.type === 'pill' && (
+                isEditing ? (
+                  <div className="input-group">
+                    <label className="input-label">Scheduled Time</label>
+                    <input
+                      type="text"
+                      className="input-field sheet-name-input-active"
+                      value={editedTime}
+                      onChange={(e) => setEditedTime(e.target.value)}
+                      placeholder="e.g. 09:00 AM"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleSaveEdit();
+                        }
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="sheet-context-info">
+                    {sheetItem.taken ? (
+                      <span className="sheet-sub-timestamp">
+                        Taken at {sheetItem.takenAt || sheetItem.time}
+                      </span>
+                    ) : (
+                      <span className="sheet-sub-timestamp pending">
+                        Scheduled for {sheetItem.time}{sheetItem.dosage ? ` • ${sheetItem.dosage}` : ''}
+                      </span>
+                    )}
+                  </div>
+                )
               )}
-
-              <button
-                type="button"
-                className="btn btn-danger pill-option-btn"
-                onClick={() => {
-                  removePill(selectedPillForOptions.id);
-                  setSelectedPillForOptions(null);
-                }}
-              >
-                <Trash2 size={16} /> Delete Medication
-              </button>
-
-              <button
-                type="button"
-                className="btn btn-ghost pill-option-btn"
-                onClick={() => setSelectedPillForOptions(null)}
-              >
-                Cancel
-              </button>
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* Pill Confirmation Modal (Take or Undo) */}
-      {pillConfirmation && (
-        <div className="modal-overlay" onClick={() => setPillConfirmation(null)}>
-          <div className="modal-content glass-card pill-confirm-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-drag-pill" />
-            <div
-              className="pill-confirm-icon-wrap"
-              style={{
-                background: pillConfirmation.action === 'undo' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(168, 85, 247, 0.15)',
-                color: pillConfirmation.action === 'undo' ? '#f59e0b' : '#c084fc'
-              }}
-            >
-              {pillConfirmation.action === 'undo' ? <RotateCcw size={26} /> : <Check size={26} />}
-            </div>
-            <h3 className="pill-confirm-title">{pillConfirmation.title}</h3>
-            <p className="pill-confirm-message">{pillConfirmation.message}</p>
-            {pillConfirmation.sub && (
-              <span className="pill-confirm-sub">{pillConfirmation.sub}</span>
-            )}
-            <div className="pill-confirm-actions">
-              <button
-                type="button"
-                className="btn btn-secondary pill-confirm-btn"
-                onClick={() => setPillConfirmation(null)}
-              >
-                {pillConfirmation.cancelText || 'Cancel'}
-              </button>
-              <button
-                type="button"
-                className={`btn ${pillConfirmation.action === 'undo' ? 'btn-warning' : 'btn-care'} pill-confirm-btn`}
-                onClick={() => {
-                  togglePillTaken(pillConfirmation.pill.id);
-                  setPillConfirmation(null);
-                }}
-              >
-                {pillConfirmation.confirmText}
-              </button>
+            <div className="sheet-actions-row">
+              {isEditing ? (
+                <>
+                  <button
+                    type="button"
+                    className="btn btn-secondary sheet-btn"
+                    onClick={handleCancelEdit}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-care sheet-btn btn-save"
+                    onClick={handleSaveEdit}
+                    disabled={!editedName.trim()}
+                  >
+                    <Check size={16} /> Save
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="btn btn-danger sheet-btn"
+                    onClick={handleDeleteItem}
+                  >
+                    <Trash2 size={16} /> Delete
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary sheet-btn"
+                    onClick={handleStartEdit}
+                  >
+                    <Pencil size={16} /> Edit
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

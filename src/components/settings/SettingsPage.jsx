@@ -5,25 +5,26 @@ import {
   Moon,
   Sun,
   Bell,
-  BellRing,
   Star,
   ShieldCheck,
   HelpCircle,
   LogOut,
   Trash2,
   ChevronRight,
-  CheckCircle2,
-  AlertTriangle,
   Sparkles,
   Droplets,
   Pill,
   Dumbbell,
   Volume2,
-  MessageSquare,
-  Search,
-  ExternalLink,
-  Lock,
-  ChevronDown
+  Flame,
+  AlertTriangle,
+  Crown,
+  CreditCard,
+  Receipt,
+  History,
+  ChevronDown,
+  Check,
+  CheckCircle2
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -31,6 +32,10 @@ export default function SettingsPage() {
     data,
     toggleTheme,
     closeSettingsPage,
+    openFaqPage,
+    openPrivacyPage,
+    toggleFapCounter,
+    switchSubscriptionPlan,
     toggleNotification,
     saveRating,
     logoutUser,
@@ -38,7 +43,11 @@ export default function SettingsPage() {
     deleteAccount
   } = useApp();
 
-  const { theme, notifications, userRating, auth } = data;
+  const { theme, notifications, userRating, auth, subscription } = data;
+
+  // Subscription Modal state
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+  const [isPlanHistoryExpanded, setIsPlanHistoryExpanded] = useState(false);
 
   // Modals state
   const [isRateModalOpen, setIsRateModalOpen] = useState(false);
@@ -47,14 +56,6 @@ export default function SettingsPage() {
   const [selectedFeedbackTags, setSelectedFeedbackTags] = useState(userRating?.tags || []);
   const [reviewComment, setReviewComment] = useState(userRating?.comment || '');
   const [rateSubmittedToast, setRateSubmittedToast] = useState(false);
-
-  // Q&A / FAQ Modal state
-  const [isQAModalOpen, setIsQAModalOpen] = useState(false);
-  const [qaSearch, setQaSearch] = useState('');
-  const [expandedFaqId, setExpandedFaqId] = useState('faq-1');
-
-  // Privacy Policy Modal state
-  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
 
   // Logout Modal state
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -73,58 +74,6 @@ export default function SettingsPage() {
     'Loved TUT Workout Timer',
     'Helpful Daily Habits'
   ];
-
-  // Q&A data
-  const faqItems = [
-    {
-      id: 'faq-1',
-      category: 'Water & Hydration',
-      question: 'How is my daily water intake target calculated?',
-      answer: 'Your recommended target is initialized based on standard metabolic hydration guidelines (~30-35ml per kg of body weight). You can easily adjust your daily target goal at any time in the Water tab by tapping on the Target badge.'
-    },
-    {
-      id: 'faq-2',
-      category: 'Diet & Macros',
-      question: 'How do custom meals calculate calories and macros?',
-      answer: 'When you create a custom meal or recipe in the Diet tab, VitalSync calculates the combined protein, carbohydrates, fats, and total calories in real time. Saved meals can then be logged with a single tap whenever you eat.'
-    },
-    {
-      id: 'faq-3',
-      category: 'Workouts & TUT',
-      question: 'What is TUT (Time Under Tension) in the workout tracker?',
-      answer: 'TUT measures the duration muscles spend under resistance during each set. Tracking TUT along with rest periods optimizes hypertrophy and muscular endurance by ensuring you achieve the required stimulus.'
-    },
-    {
-      id: 'faq-4',
-      category: 'Medication & Care',
-      question: 'How does pill adherence and the 30-day heatmap work?',
-      answer: 'The Care & Pills tab tracks your daily adherence rate based on scheduled doses. The heatmap displays your consistency over the past 30 days (Green for taken, Gray for missed, Yellow for pending today) so you never miss critical supplements.'
-    },
-    {
-      id: 'faq-5',
-      category: 'Privacy & Storage',
-      question: 'Where is my health and biometric data stored?',
-      answer: 'VitalSync is engineered with an offline-first, client-side architecture. 100% of your biometric stats, routine logs, and medications remain encrypted on your device via HTML5 Local Storage. We never sell or transmit your personal data.'
-    },
-    {
-      id: 'faq-6',
-      category: 'Data Backup',
-      question: 'How do I transfer my data to a new device?',
-      answer: 'Go to your Profile tab and click "Export Backup (JSON)". This generates a secure JSON backup of your records that you can transfer to your other device and restore via "Restore / Import Data".'
-    },
-    {
-      id: 'faq-7',
-      category: 'Notifications',
-      question: 'How do notifications work in offline/web app mode?',
-      answer: 'Notifications utilize standard Web Notifications and Android Capacitor Local Notification channels when running as an APK. You can toggle specific notification categories right here in Settings.'
-    }
-  ];
-
-  const filteredFaqs = faqItems.filter(item =>
-    item.question.toLowerCase().includes(qaSearch.toLowerCase()) ||
-    item.answer.toLowerCase().includes(qaSearch.toLowerCase()) ||
-    item.category.toLowerCase().includes(qaSearch.toLowerCase())
-  );
 
   const handleToggleTag = (tag) => {
     if (selectedFeedbackTags.includes(tag)) {
@@ -333,7 +282,81 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* ================= 3. ENGAGEMENT & INFORMATION ================= */}
+        {/* ================= 3. HABITS & TRACKERS ================= */}
+        <section className="settings-section">
+          <div className="settings-section-header">
+            <span className="settings-section-title">Habits & Trackers</span>
+          </div>
+
+          <div className="settings-card glass-card">
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <div className={`settings-icon-circle ${data?.fapCounterEnabled ? 'icon-flame-active' : 'icon-muted'}`}>
+                  <Flame size={20} />
+                </div>
+                <div className="settings-row-text">
+                  <span className="settings-row-label">Fap Counter</span>
+                  <span className="settings-row-sub">
+                    {data?.fapCounterEnabled
+                      ? 'Streak & discipline tracking active'
+                      : 'Enable habit streak & abstinence tracking'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Fap Counter Switch */}
+              <button
+                className={`ios-toggle-switch ${data?.fapCounterEnabled ? 'active' : ''}`}
+                onClick={toggleFapCounter}
+                role="switch"
+                aria-checked={!!data?.fapCounterEnabled}
+                aria-label="Toggle Fap Counter habit tracker"
+                title="Toggle Fap Counter"
+              >
+                <span className="ios-toggle-knob" />
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* ================= 4. SUBSCRIPTION & MEMBERSHIP ================= */}
+        <section className="settings-section">
+          <div className="settings-section-header">
+            <span className="settings-section-title">Subscription & Membership</span>
+          </div>
+
+          <div className="settings-card glass-card">
+            <button
+              className="settings-action-row subscription-action-row"
+              onClick={() => setIsSubscriptionModalOpen(true)}
+              aria-label="Manage Subscription"
+            >
+              <div className="settings-row-left">
+                <div className={`settings-icon-circle ${subscription?.plan === 'pro' ? 'icon-pro-gold' : 'icon-free-tier'}`}>
+                  <Crown size={20} />
+                </div>
+                <div className="settings-row-text">
+                  <div className="subscription-card-title-row">
+                    <span className="settings-row-label">Subscription</span>
+                    <span className={`plan-badge-pill ${subscription?.plan === 'pro' ? 'badge-pro-gradient' : 'badge-free-pill'}`}>
+                      {subscription?.plan === 'pro' ? 'PRO MEMBER' : 'FREE TIER'}
+                    </span>
+                  </div>
+                  <span className="settings-row-sub">
+                    {subscription?.plan === 'pro'
+                      ? `Active • ${subscription?.price || '$9.99/mo'} (Renews ${subscription?.renewalDate || 'Oct 15, 2026'})`
+                      : 'Free Plan • Tap to view payment & plan history'}
+                  </span>
+                </div>
+              </div>
+              <div className="settings-row-right">
+                <ChevronRight size={18} className="chevron-icon" />
+              </div>
+            </button>
+          </div>
+        </section>
+
+        {/* ================= 5. ENGAGEMENT & INFORMATION ================= */}
         <section className="settings-section">
           <div className="settings-section-header">
             <span className="settings-section-title">Support & Community</span>
@@ -372,7 +395,7 @@ export default function SettingsPage() {
             {/* Q and A */}
             <button
               className="settings-action-row"
-              onClick={() => setIsQAModalOpen(true)}
+              onClick={openFaqPage}
               aria-label="Open Frequently Asked Questions"
             >
               <div className="settings-row-left">
@@ -380,7 +403,7 @@ export default function SettingsPage() {
                   <HelpCircle size={20} />
                 </div>
                 <div className="settings-row-text">
-                  <span className="settings-row-label">Q and A</span>
+                  <span className="settings-row-label">FAQ</span>
                   <span className="settings-row-sub">Frequently asked questions & feature guides</span>
                 </div>
               </div>
@@ -394,7 +417,7 @@ export default function SettingsPage() {
             {/* Privacy Policy */}
             <button
               className="settings-action-row"
-              onClick={() => setIsPrivacyModalOpen(true)}
+              onClick={openPrivacyPage}
               aria-label="View Privacy Policy"
             >
               <div className="settings-row-left">
@@ -575,154 +598,6 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* ================= Q AND A (FAQ) MODAL ================= */}
-      {isQAModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsQAModalOpen(false)}>
-          <div className="modal-content modal-content-large qa-modal-sheet" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-drag-pill" />
-
-            <div className="qa-modal-header">
-              <div className="brand-icon icon-info-bg">
-                <HelpCircle size={20} />
-              </div>
-              <div>
-                <h3 className="modal-title">Questions & Answers</h3>
-                <p className="modal-description">Everything you need to know about VitalSync</p>
-              </div>
-            </div>
-
-            {/* Search Filter */}
-            <div className="qa-search-box">
-              <Search size={16} className="qa-search-icon" />
-              <input
-                type="text"
-                className="qa-search-input"
-                placeholder="Search questions (e.g. water, macros, pills)..."
-                value={qaSearch}
-                onChange={(e) => setQaSearch(e.target.value)}
-              />
-              {qaSearch && (
-                <button className="qa-search-clear" onClick={() => setQaSearch('')}>
-                  ×
-                </button>
-              )}
-            </div>
-
-            {/* Accordion List */}
-            <div className="qa-accordion-list">
-              {filteredFaqs.length > 0 ? (
-                filteredFaqs.map((faq) => {
-                  const isExpanded = expandedFaqId === faq.id;
-                  return (
-                    <div key={faq.id} className={`qa-accordion-item ${isExpanded ? 'expanded' : ''}`}>
-                      <button
-                        className="qa-accordion-trigger"
-                        onClick={() => setExpandedFaqId(isExpanded ? null : faq.id)}
-                        aria-expanded={isExpanded}
-                      >
-                        <div className="qa-trigger-left">
-                          <span className="qa-category-pill">{faq.category}</span>
-                          <span className="qa-question-text">{faq.question}</span>
-                        </div>
-                        <ChevronDown size={18} className={`qa-chevron ${isExpanded ? 'rotate' : ''}`} />
-                      </button>
-
-                      {isExpanded && (
-                        <div className="qa-accordion-body">
-                          <p className="qa-answer-text">{faq.answer}</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="qa-empty-state">
-                  <p>No questions found matching "{qaSearch}".</p>
-                  <button className="btn btn-secondary btn-sm" onClick={() => setQaSearch('')}>
-                    Reset Search
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="btn btn-primary btn-block"
-                onClick={() => setIsQAModalOpen(false)}
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ================= PRIVACY POLICY MODAL ================= */}
-      {isPrivacyModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsPrivacyModalOpen(false)}>
-          <div className="modal-content modal-content-large privacy-modal-sheet" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-drag-pill" />
-
-            <div className="privacy-modal-header">
-              <div className="brand-icon icon-shield-bg">
-                <ShieldCheck size={22} />
-              </div>
-              <div>
-                <h3 className="modal-title">Privacy Policy</h3>
-                <span className="privacy-updated-text">Updated: September 2026 • 100% On-Device</span>
-              </div>
-            </div>
-
-            <div className="privacy-scroll-body">
-              <div className="privacy-highlight-card">
-                <Lock size={18} className="text-success" />
-                <p>
-                  <strong>Your health data stays on your device.</strong> VitalSync is designed with privacy-first principles. None of your biometrics, hydration logs, diet, workouts, or pill records are uploaded to remote ad servers.
-                </p>
-              </div>
-
-              <div className="privacy-section-item">
-                <h4 className="privacy-subtitle">1. Data Storage & Encryption</h4>
-                <p>
-                  All user profile metrics, meal ingredients, workout routines, and supplement tracking data are stored locally in your browser’s encrypted client-side storage engine. No remote server has access to your health database.
-                </p>
-              </div>
-
-              <div className="privacy-section-item">
-                <h4 className="privacy-subtitle">2. Zero Third-Party Tracking</h4>
-                <p>
-                  VitalSync does not use behavioral advertising networks, tracking cookies, analytics pixels, or data brokers. Your habits and routines are entirely confidential.
-                </p>
-              </div>
-
-              <div className="privacy-section-item">
-                <h4 className="privacy-subtitle">3. Data Ownership & Portability</h4>
-                <p>
-                  You own 100% of your data. You can export your full health records at any time as a readable JSON file via the Profile page, or completely wipe your data using the Delete Account option.
-                </p>
-              </div>
-
-              <div className="privacy-section-item">
-                <h4 className="privacy-subtitle">4. HIPAA & GDPR Philosophy</h4>
-                <p>
-                  Because data processing occurs strictly on your device without centralized profiling, your personal medical privacy and confidentiality meet the most stringent international data standards.
-                </p>
-              </div>
-            </div>
-
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="btn btn-primary btn-block"
-                onClick={() => setIsPrivacyModalOpen(false)}
-              >
-                I Understand
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ================= LOGOUT MODAL ================= */}
       {isLogoutModalOpen && (
@@ -826,6 +701,202 @@ export default function SettingsPage() {
                 onClick={handleConfirmDeleteAccount}
               >
                 Permanently Delete Everything
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= SUBSCRIPTION MODAL SHEET ================= */}
+      {isSubscriptionModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsSubscriptionModalOpen(false)}>
+          <div className="modal-content modal-content-large subscription-modal-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-drag-pill" />
+
+            <div className="subscription-modal-header">
+              <div className={`brand-icon ${subscription?.plan === 'pro' ? 'icon-pro-badge-bg' : 'icon-free-badge-bg'}`}>
+                <Crown size={22} />
+              </div>
+              <div>
+                <h3 className="modal-title">Subscription & Billing</h3>
+                <span className="subscription-status-sub">
+                  Current Status:{' '}
+                  <strong className={subscription?.plan === 'pro' ? 'text-gold' : 'text-accent'}>
+                    {subscription?.plan === 'pro' ? 'Active Pro Membership' : 'Active Free Tier'}
+                  </strong>
+                </span>
+              </div>
+            </div>
+
+            <div className="subscription-scroll-body">
+              {/* CURRENT ACTIVE PLAN HERO CARD */}
+              <div className={`current-plan-card ${subscription?.plan === 'pro' ? 'plan-card-pro' : 'plan-card-free'}`}>
+                <div className="current-plan-top">
+                  <div className="current-plan-info">
+                    <span className="current-plan-tag">Current Plan</span>
+                    <h4 className="current-plan-name">
+                      {subscription?.plan === 'pro' ? 'VitalSync Pro' : 'VitalSync Free Tier'}
+                    </h4>
+                    <span className="current-plan-price">
+                      {subscription?.plan === 'pro' ? '$9.99 / month' : '$0.00 / forever'}
+                    </span>
+                  </div>
+                  <div className={`plan-status-pill ${subscription?.plan === 'pro' ? 'status-pill-pro' : 'status-pill-free'}`}>
+                    {subscription?.plan === 'pro' ? '★ PRO ACTIVE' : 'FREE TIER'}
+                  </div>
+                </div>
+
+                <div className="current-plan-meta">
+                  <div className="plan-meta-item">
+                    <span className="meta-label">Billing Cycle</span>
+                    <span className="meta-val">{subscription?.plan === 'pro' ? 'Monthly' : 'None'}</span>
+                  </div>
+                  <div className="plan-meta-item">
+                    <span className="meta-label">Renewal Date</span>
+                    <span className="meta-val">{subscription?.renewalDate || 'Oct 15, 2026'}</span>
+                  </div>
+                  <div className="plan-meta-item">
+                    <span className="meta-label">Payment Method</span>
+                    <span className="meta-val">{subscription?.plan === 'pro' ? 'Apple Pay (•••• 4242)' : 'None'}</span>
+                  </div>
+                </div>
+
+                {/* Plan Features Checklist */}
+                <div className="plan-perks-list">
+                  <span className="perks-title">Included in your plan:</span>
+                  {subscription?.plan === 'pro' ? (
+                    <ul className="perks-items">
+                      <li><Check size={14} className="text-success" /> Unlimited Custom Macro Recipes & Nutrition Breakdown</li>
+                      <li><Check size={14} className="text-success" /> Advanced TUT (Time Under Tension) Workout Engine</li>
+                      <li><Check size={14} className="text-success" /> Medication & Skincare Adherence Heatmaps</li>
+                      <li><Check size={14} className="text-success" /> Fap Counter Discipline Streak & Focus Tracking</li>
+                      <li><Check size={14} className="text-success" /> 100% Encrypted Local Storage with Zero Ads</li>
+                    </ul>
+                  ) : (
+                    <ul className="perks-items">
+                      <li><Check size={14} className="text-success" /> Daily Water Intake & Hydration Tracker</li>
+                      <li><Check size={14} className="text-success" /> Standard Workout Plan & Exercise Logging</li>
+                      <li><Check size={14} className="text-success" /> Basic Medication Reminders</li>
+                      <li className="perk-muted">✕ Advanced Macro Recipes (Pro feature)</li>
+                      <li className="perk-muted">✕ TUT Resistance Timer (Pro feature)</li>
+                    </ul>
+                  )}
+                </div>
+
+                {/* Interactive Plan Switcher Button */}
+                <div className="plan-switch-action">
+                  <button
+                    type="button"
+                    className={`btn btn-sm ${subscription?.plan === 'pro' ? 'btn-secondary' : 'btn-primary'}`}
+                    onClick={() => switchSubscriptionPlan(subscription?.plan === 'pro' ? 'free' : 'pro')}
+                  >
+                    {subscription?.plan === 'pro' ? 'Switch to Free Plan (Demo)' : 'Upgrade to Pro ($9.99/mo)'}
+                  </button>
+                </div>
+              </div>
+
+              {/* PAYMENT HISTORY SECTION */}
+              <div className="subscription-section-block">
+                <div className="section-block-header">
+                  <div className="section-title-with-icon">
+                    <Receipt size={18} className="text-accent" />
+                    <h4 className="section-block-title">Payment History</h4>
+                  </div>
+                  <span className="section-block-badge">
+                    {subscription?.paymentHistory?.length || 0} Invoices
+                  </span>
+                </div>
+
+                <div className="payment-history-list">
+                  {subscription?.paymentHistory && subscription.paymentHistory.length > 0 ? (
+                    subscription.paymentHistory.map((inv) => (
+                      <div key={inv.id} className="payment-history-item">
+                        <div className="payment-item-left">
+                          <div className="payment-item-icon">
+                            <CreditCard size={16} />
+                          </div>
+                          <div className="payment-item-details">
+                            <span className="payment-plan-name">{inv.plan || 'VitalSync Pro Monthly'}</span>
+                            <span className="payment-meta-sub">
+                              {inv.date} • {inv.id} • {inv.method}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="payment-item-right">
+                          <span className="payment-amount">{inv.amount}</span>
+                          <span className="payment-status-badge status-paid">{inv.status}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="payment-empty-box">
+                      <p>No billing invoices found.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* PLAN / SUBSCRIPTION HISTORY (COLLAPSABLE) */}
+              <div className="subscription-section-block plan-history-collapsible-block">
+                <button
+                  type="button"
+                  className="section-collapsible-trigger"
+                  onClick={() => setIsPlanHistoryExpanded(prev => !prev)}
+                  aria-expanded={isPlanHistoryExpanded}
+                >
+                  <div className="section-title-with-icon">
+                    <History size={18} className="text-gold" />
+                    <div className="collapsible-title-wrap">
+                      <h4 className="section-block-title">Subscription & Plan History</h4>
+                      <span className="collapsible-subtitle">
+                        {isPlanHistoryExpanded
+                          ? 'Tap to collapse'
+                          : `${subscription?.planHistory?.length || 3} recorded transitions • Tap to expand`}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="collapsible-chevron-wrap">
+                    <ChevronDown size={18} className={`collapsible-chevron ${isPlanHistoryExpanded ? 'rotate' : ''}`} />
+                  </div>
+                </button>
+
+                {isPlanHistoryExpanded && (
+                  <div className="plan-history-expanded-body">
+                    <div className="plan-history-timeline">
+                      {subscription?.planHistory?.map((item, idx) => (
+                        <div key={item.id || idx} className="timeline-node">
+                          <div className="timeline-bullet-wrap">
+                            <div className={`timeline-bullet ${item.status === 'Active' ? 'bullet-active' : 'bullet-done'}`} />
+                            {idx < subscription.planHistory.length - 1 && <div className="timeline-line" />}
+                          </div>
+                          <div className="timeline-content-card">
+                            <div className="timeline-row-head">
+                              <span className="timeline-plan-title">{item.planName}</span>
+                              <span className={`timeline-status-pill ${item.status === 'Active' ? 'pill-active' : 'pill-past'}`}>
+                                {item.status}
+                              </span>
+                            </div>
+                            <span className="timeline-period-text">{item.period}</span>
+                            <div className="timeline-footer-row">
+                              <span className="timeline-price">{item.price}</span>
+                              <span className="timeline-notes">{item.notes}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn btn-primary btn-block"
+                onClick={() => setIsSubscriptionModalOpen(false)}
+              >
+                Done
               </button>
             </div>
           </div>

@@ -6,16 +6,7 @@ import {
   User,
   Edit2,
   Camera,
-  CheckCircle2,
-  Sparkles,
-  Flame,
-  Dumbbell,
-  Pill,
-  Download,
-  Upload,
-  Smartphone,
-  ChevronRight,
-  Heart
+  Sparkles
 } from 'lucide-react';
 
 const PRESET_AVATARS = [
@@ -27,11 +18,10 @@ export default function ProfilePage() {
     data,
     updateProfile,
     closeProfilePage,
-    openSettingsPage,
-    importData
+    openSettingsPage
   } = useApp();
 
-  const { profile, water, workout, care, auth } = data;
+  const { profile, auth } = data;
 
   // Edit Profile Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -46,16 +36,6 @@ export default function ProfilePage() {
 
   // Avatar Picker State
   const [isAvatarPickerOpen, setIsAvatarPickerOpen] = useState(false);
-
-  // Android Capacitor Modal State
-  const [isAndroidModalOpen, setIsAndroidModalOpen] = useState(false);
-  const [copiedCode, setCopiedCode] = useState(false);
-
-  // Import Modal State
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [importJsonText, setImportJsonText] = useState('');
-  const [importError, setImportError] = useState('');
-  const [importSuccess, setImportSuccess] = useState(false);
 
   // BMI Calculation
   const heightM = (Number(profile.height) || 178) / 100;
@@ -97,56 +77,6 @@ export default function ProfilePage() {
       avatarUrl: selectedAvatar,
     });
     setIsEditModalOpen(false);
-  };
-
-  const handleExportData = () => {
-    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
-      JSON.stringify(data, null, 2)
-    )}`;
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute('href', jsonString);
-    downloadAnchor.setAttribute('download', `vitalsync_health_backup_${new Date().toISOString().slice(0, 10)}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-  };
-
-  const handleImportSubmit = (e) => {
-    e.preventDefault();
-    try {
-      const success = importData(importJsonText);
-      if (success) {
-        setImportSuccess(true);
-        setTimeout(() => {
-          setIsImportModalOpen(false);
-          setImportJsonText('');
-          setImportError('');
-          setImportSuccess(false);
-        }, 900);
-      } else {
-        setImportError('Invalid backup file structure.');
-      }
-    } catch (err) {
-      setImportError('Invalid JSON syntax. Please verify the backup file contents.');
-    }
-  };
-
-  const handleCopyAndroidCommands = () => {
-    const commands = `# 1. Build the React web app
-npm run build
-
-# 2. Add Android platform (first time only)
-npx cap add android
-
-# 3. Copy web assets to Android
-npx cap sync android
-
-# 4. Open in Android Studio to run or build APK
-npx cap open android`;
-
-    navigator.clipboard.writeText(commands);
-    setCopiedCode(true);
-    setTimeout(() => setCopiedCode(false), 2000);
   };
 
   return (
@@ -279,123 +209,6 @@ npx cap open android`;
               <span>25.0</span>
               <span>30.0</span>
             </div>
-          </div>
-        </section>
-
-        {/* Health Streaks & Consistency Card */}
-        <section className="section-block">
-          <div className="section-heading-outside">
-            <h3 className="section-outside-title">Health Consistency</h3>
-          </div>
-          <div className="consistency-grid">
-            <div className="consistency-card glass-card">
-              <div className="consistency-icon-wrap water-streak-icon">
-                <Flame size={20} />
-              </div>
-              <div className="consistency-info">
-                <span className="consistency-value">{water.streak || 6} Days</span>
-                <span className="consistency-label">Hydration Streak</span>
-              </div>
-            </div>
-
-            <div className="consistency-card glass-card">
-              <div className="consistency-icon-wrap workout-streak-icon">
-                <Dumbbell size={20} />
-              </div>
-              <div className="consistency-info">
-                <span className="consistency-value">{workout.streak || 4} Days</span>
-                <span className="consistency-label">Workout Streak</span>
-              </div>
-            </div>
-
-            <div className="consistency-card glass-card">
-              <div className="consistency-icon-wrap pill-adherence-icon">
-                <Pill size={20} />
-              </div>
-              <div className="consistency-info">
-                <span className="consistency-value">{care.pillAnalytics?.overallAdherence || 87}%</span>
-                <span className="consistency-label">Pill Adherence</span>
-              </div>
-            </div>
-
-            <div className="consistency-card glass-card">
-              <div className="consistency-icon-wrap heart-rate-icon">
-                <Heart size={20} />
-              </div>
-              <div className="consistency-info">
-                <span className="consistency-value">Optimal</span>
-                <span className="consistency-label">Vital Balance</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Settings Quick Access Banner */}
-        <section className="section-block">
-          <button
-            className="settings-entry-banner glass-card"
-            onClick={openSettingsPage}
-            aria-label="Open App Settings"
-          >
-            <div className="settings-entry-left">
-              <div className="settings-entry-icon">
-                <Settings size={22} />
-              </div>
-              <div className="settings-entry-text">
-                <span className="settings-entry-title">App Settings & Preferences</span>
-                <span className="settings-entry-sub">
-                  Theme, notifications, privacy, Q&A, rate app & more
-                </span>
-              </div>
-            </div>
-            <div className="settings-entry-right">
-              <ChevronRight size={20} className="chevron-icon" />
-            </div>
-          </button>
-        </section>
-
-        {/* Data Tools & Backup */}
-        <section className="section-block">
-          <div className="section-heading-outside">
-            <h3 className="section-outside-title">Data Management & Backup</h3>
-          </div>
-          <div className="tools-card glass-card">
-            <button className="tool-action-row" onClick={handleExportData}>
-              <div className="tool-icon-wrap export-icon">
-                <Download size={20} />
-              </div>
-              <div className="tool-info">
-                <span className="tool-name">Export Backup (JSON)</span>
-                <span className="tool-desc">Save all your health logs, meals and routines</span>
-              </div>
-              <ChevronRight size={16} className="chevron-icon" />
-            </button>
-
-            <div className="tool-divider" />
-
-            <button className="tool-action-row" onClick={() => setIsImportModalOpen(true)}>
-              <div className="tool-icon-wrap import-icon">
-                <Upload size={20} />
-              </div>
-              <div className="tool-info">
-                <span className="tool-name">Restore / Import Data</span>
-                <span className="tool-desc">Restore previously exported JSON backup</span>
-              </div>
-              <ChevronRight size={16} className="chevron-icon" />
-            </button>
-
-            <div className="tool-divider" />
-
-            <button className="tool-action-row" onClick={() => setIsAndroidModalOpen(true)}>
-              <div className="tool-icon-wrap android-icon">
-                <Smartphone size={20} />
-              </div>
-              <div className="tool-info">
-                <span className="tool-name">Wrap for Android (Capacitor)</span>
-                <span className="tool-desc">View commands to generate native APK</span>
-              </div>
-              <ChevronRight size={16} className="chevron-icon" />
-            </button>
           </div>
         </section>
       </main>
@@ -545,113 +358,6 @@ npx cap open android`;
                 Close
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* ================= ANDROID CAPACITOR MODAL ================= */}
-      {isAndroidModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsAndroidModalOpen(false)}>
-          <div className="modal-content modal-content-large" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-drag-pill" />
-            <div className="modal-title-row">
-              <div className="brand-icon" style={{ background: '#10b981' }}>
-                <Smartphone size={18} />
-              </div>
-              <h3 className="modal-title">Android APK Packaging Guide</h3>
-            </div>
-
-            <p className="modal-description">
-              This app is pre-configured with <strong>Capacitor</strong>. Run these terminal commands to generate your native Android project:
-            </p>
-
-            <div className="code-snippet-box">
-              <div className="code-snippet-header">
-                <span>Terminal Commands</span>
-                <button className="btn-text" onClick={handleCopyAndroidCommands}>
-                  {copiedCode ? '✓ Copied!' : 'Copy Commands'}
-                </button>
-              </div>
-              <pre className="code-pre">
-{`# 1. Build the React web app
-npm run build
-
-# 2. Add Android platform (first time only)
-npx cap add android
-
-# 3. Copy web assets to Android
-npx cap sync android
-
-# 4. Open in Android Studio to run or build APK
-npx cap open android`}
-              </pre>
-            </div>
-
-            <div className="guide-notes">
-              <div className="guide-note-item">
-                <CheckCircle2 size={16} className="text-success" />
-                <span><strong>capacitor.config.json</strong> is placed at the root of your project.</span>
-              </div>
-              <div className="guide-note-item">
-                <CheckCircle2 size={16} className="text-success" />
-                <span>Responsive viewport, safe-area insets, and dark status bar are enabled.</span>
-              </div>
-            </div>
-
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="btn btn-primary btn-block"
-                onClick={() => setIsAndroidModalOpen(false)}
-              >
-                Got It
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ================= IMPORT DATA MODAL ================= */}
-      {isImportModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsImportModalOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-drag-pill" />
-            <h3 className="modal-title">Restore / Import Data</h3>
-            <p className="modal-description">
-              Paste your previously exported JSON backup data below:
-            </p>
-
-            <form onSubmit={handleImportSubmit}>
-              <div className="input-group">
-                <textarea
-                  className="input-field json-textarea"
-                  rows="7"
-                  placeholder="Paste backup JSON here..."
-                  value={importJsonText}
-                  onChange={(e) => {
-                    setImportJsonText(e.target.value);
-                    setImportError('');
-                  }}
-                  required
-                />
-              </div>
-
-              {importError && <p className="error-text">{importError}</p>}
-              {importSuccess && <p className="success-text">✓ Data restored successfully!</p>}
-
-              <div className="modal-actions">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setIsImportModalOpen(false)}
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  Import Data
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}

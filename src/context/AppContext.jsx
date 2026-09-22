@@ -439,6 +439,28 @@ const INITIAL_DATA = {
     sound: true,
   },
   userRating: null,
+  fapCounterEnabled: false,
+  subscription: {
+    plan: 'pro',
+    status: 'active',
+    billingCycle: 'monthly',
+    price: '$9.99/mo',
+    renewalDate: 'Oct 15, 2026',
+    startDate: 'Jan 15, 2026',
+    paymentMethod: 'Apple Pay (Mastercard •••• 4242)',
+    paymentHistory: [
+      { id: 'INV-2026-009', date: 'Sep 15, 2026', amount: '$9.99', status: 'Paid', method: 'Apple Pay', plan: 'VitalSync Pro Monthly' },
+      { id: 'INV-2026-008', date: 'Aug 15, 2026', amount: '$9.99', status: 'Paid', method: 'Apple Pay', plan: 'VitalSync Pro Monthly' },
+      { id: 'INV-2026-007', date: 'Jul 15, 2026', amount: '$9.99', status: 'Paid', method: 'Apple Pay', plan: 'VitalSync Pro Monthly' },
+      { id: 'INV-2026-006', date: 'Jun 15, 2026', amount: '$9.99', status: 'Paid', method: 'Apple Pay', plan: 'VitalSync Pro Monthly' },
+      { id: 'INV-2026-005', date: 'May 15, 2026', amount: '$9.99', status: 'Paid', method: 'Apple Pay', plan: 'VitalSync Pro Monthly' },
+    ],
+    planHistory: [
+      { id: 'ph-1', planName: 'VitalSync Pro (Monthly)', period: 'May 15, 2026 – Present', price: '$9.99/mo', status: 'Active', notes: 'Auto-renews monthly via Apple Pay' },
+      { id: 'ph-2', planName: 'VitalSync Pro (14-Day Free Trial)', period: 'Jan 15, 2026 – Jan 29, 2026', price: '$0.00', status: 'Completed', notes: 'Converted to Pro Monthly' },
+      { id: 'ph-3', planName: 'VitalSync Free Tier', period: 'Jan 10, 2026 – Jan 15, 2026', price: '$0.00', status: 'Upgraded', notes: 'Initial account sign up' }
+    ]
+  },
   auth: {
     isLoggedIn: true,
     email: 'alex.rivera@vitalsync.health',
@@ -491,6 +513,12 @@ export function AppProvider({ children }) {
             ...(parsed.notifications || {}),
           },
           userRating: parsed.userRating || null,
+          subscription: {
+            ...INITIAL_DATA.subscription,
+            ...(parsed.subscription || {}),
+            paymentHistory: parsed.subscription?.paymentHistory || INITIAL_DATA.subscription.paymentHistory,
+            planHistory: parsed.subscription?.planHistory || INITIAL_DATA.subscription.planHistory,
+          },
           auth: {
             ...INITIAL_DATA.auth,
             ...(parsed.auth || {}),
@@ -525,6 +553,29 @@ export function AppProvider({ children }) {
 
   const closeSettingsPage = () => {
     setCurrentPage('profile');
+  };
+
+  const openFaqPage = () => {
+    setCurrentPage('faq');
+  };
+
+  const closeFaqPage = () => {
+    setCurrentPage('settings');
+  };
+
+  const openPrivacyPage = () => {
+    setCurrentPage('privacy');
+  };
+
+  const closePrivacyPage = () => {
+    setCurrentPage('settings');
+  };
+
+  const toggleFapCounter = () => {
+    setData(prev => ({
+      ...prev,
+      fapCounterEnabled: !prev.fapCounterEnabled
+    }));
   };
 
   // Persist state changes
@@ -869,6 +920,52 @@ export function AppProvider({ children }) {
     }));
   };
 
+  const removeSkinStep = (routineType, id) => {
+    setData(prev => {
+      const listKey = routineType === 'AM' ? 'skinRoutineAM' : 'skinRoutinePM';
+      return {
+        ...prev,
+        care: {
+          ...prev.care,
+          [listKey]: prev.care[listKey].filter(step => step.id !== id)
+        }
+      };
+    });
+  };
+
+  const updateSkinStep = (routineType, id, newStepName) => {
+    setData(prev => {
+      const listKey = routineType === 'AM' ? 'skinRoutineAM' : 'skinRoutinePM';
+      return {
+        ...prev,
+        care: {
+          ...prev.care,
+          [listKey]: prev.care[listKey].map(step => {
+            if (step.id === id) {
+              return { ...step, step: newStepName };
+            }
+            return step;
+          })
+        }
+      };
+    });
+  };
+
+  const updatePill = (id, updatedFields) => {
+    setData(prev => ({
+      ...prev,
+      care: {
+        ...prev.care,
+        pills: prev.care.pills.map(p => {
+          if (p.id === id) {
+            return { ...p, ...updatedFields };
+          }
+          return p;
+        })
+      }
+    }));
+  };
+
   const removePill = (id) => {
     setData(prev => ({
       ...prev,
@@ -960,6 +1057,36 @@ export function AppProvider({ children }) {
     }));
   };
 
+  const switchSubscriptionPlan = (targetPlan) => {
+    setData(prev => {
+      const currentPlan = prev.subscription?.plan || 'pro';
+      const newPlan = targetPlan || (currentPlan === 'pro' ? 'free' : 'pro');
+      const isPro = newPlan === 'pro';
+      const todayStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+      const newHistoryItem = {
+        id: `ph-${Date.now()}`,
+        planName: isPro ? 'VitalSync Pro (Monthly)' : 'VitalSync Free Tier',
+        period: `${todayStr} – Present`,
+        price: isPro ? '$9.99/mo' : '$0.00',
+        status: 'Active',
+        notes: isPro ? 'Upgraded to Pro Membership' : 'Switched to Free Tier'
+      };
+
+      return {
+        ...prev,
+        subscription: {
+          ...prev.subscription,
+          plan: newPlan,
+          price: isPro ? '$9.99/mo' : '$0.00',
+          renewalDate: isPro ? 'Oct 15, 2026' : 'None (Lifetime Free)',
+          status: 'active',
+          planHistory: [newHistoryItem, ...(prev.subscription?.planHistory || [])]
+        }
+      };
+    });
+  };
+
   const deleteAccount = () => {
     localStorage.removeItem(STORAGE_KEY);
     setData(INITIAL_DATA);
@@ -997,9 +1124,12 @@ export function AppProvider({ children }) {
         // Care & Pills
         toggleSkinStep,
         addSkinStep,
+        removeSkinStep,
+        updateSkinStep,
         setSkinMood,
         togglePillTaken,
         addPill,
+        updatePill,
         removePill,
         // Profile
         updateProfile,
@@ -1012,7 +1142,15 @@ export function AppProvider({ children }) {
         closeProfilePage,
         openSettingsPage,
         closeSettingsPage,
+        openFaqPage,
+        closeFaqPage,
+        openPrivacyPage,
+        closePrivacyPage,
         previousTab,
+        // Habits & Features
+        toggleFapCounter,
+        // Subscription
+        switchSubscriptionPlan,
         // Notifications
         toggleNotification,
         // Rating

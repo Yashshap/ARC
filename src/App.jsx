@@ -9,6 +9,8 @@ import CareAndPillsTab from './components/tabs/CareAndPillsTab';
 import AnalyticsTab from './components/tabs/AnalyticsTab';
 import ProfilePage from './components/profile/ProfilePage';
 import SettingsPage from './components/settings/SettingsPage';
+import FaqPage from './components/settings/FaqPage';
+import PrivacyPage from './components/settings/PrivacyPage';
 import './styles/theme.css';
 import './App.css';
 
@@ -20,6 +22,24 @@ function MainLayout() {
     return (
       <div id="app-viewport" className="app-viewport page-viewport-fullscreen">
         <SettingsPage />
+      </div>
+    );
+  }
+
+  // If currently on FAQ page
+  if (currentPage === 'faq') {
+    return (
+      <div id="app-viewport" className="app-viewport page-viewport-fullscreen">
+        <FaqPage />
+      </div>
+    );
+  }
+
+  // If currently on Privacy Policy page
+  if (currentPage === 'privacy') {
+    return (
+      <div id="app-viewport" className="app-viewport page-viewport-fullscreen">
+        <PrivacyPage />
       </div>
     );
   }
