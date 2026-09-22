@@ -1,562 +1,106 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { DEFAULT_CUSTOM_MEALS } from '../data/defaultCustomMeals';
+import { INITIAL_DATA } from '../data/initialData';
+import {
+  initDatabase,
+  dbAddWaterLog,
+  dbRemoveWaterLog,
+  dbSetWaterTarget,
+  dbAddMeal,
+  dbUpdateMeal,
+  dbRemoveMeal,
+  dbSaveCustomMeal,
+  dbDeleteCustomMeal,
+  dbUpdateDietTargets,
+  dbSaveWorkoutPlan,
+  dbDeleteWorkoutPlan,
+  dbAddWorkoutSession,
+  dbRemoveWorkoutSession,
+  dbSavePill,
+  dbDeletePill,
+  dbSaveSkincareStep,
+  dbDeleteSkincareStep,
+  dbSaveAppStateKey,
+  exportDatabaseToJson,
+  importDatabaseFromJson,
+  resetDatabase,
+  getTodayDateString,
+} from '../services/dbService';
+import {
+  syncWaterWeeklyHistory,
+  syncDietWeeklyHistory,
+  syncWorkoutWeeklyHistory,
+} from '../utils/dateHistorySync';
 
 const AppContext = createContext();
 
-const STORAGE_KEY = 'vitalsync_health_app_data_v1';
-
-const INITIAL_DATA = {
-  theme: 'dark',
-  water: {
-    target: 2500,
-    current: 1750,
-    streak: 6,
-    logs: [
-      { id: 1, amount: 250, time: '08:15 AM', label: 'Morning Glass' },
-      { id: 2, amount: 500, time: '10:45 AM', label: 'Work Bottle' },
-      { id: 3, amount: 250, time: '01:30 PM', label: 'Post-Lunch' },
-      { id: 4, amount: 750, time: '04:15 PM', label: 'Workout Flask' },
-    ],
-    weeklyHistory: [
-      { day: 'Mon', amount: 2400, target: 2500 },
-      { day: 'Tue', amount: 2600, target: 2500 },
-      { day: 'Wed', amount: 2100, target: 2500 },
-      { day: 'Thu', amount: 2700, target: 2500 },
-      { day: 'Fri', amount: 2500, target: 2500 },
-      { day: 'Sat', amount: 2200, target: 2500 },
-      { day: 'Sun', amount: 1750, target: 2500 },
-    ]
-  },
-  diet: {
-    targetCalories: 2250,
-    targetMacros: { protein: 145, carbs: 230, fats: 65 },
-    customMeals: DEFAULT_CUSTOM_MEALS,
-    meals: {
-      breakfast: [
-        { id: 'b1', name: 'Rolled Oats with Berries & Honey', calories: 350, protein: 12, carbs: 64, fats: 6, time: '08:30 AM' },
-        { id: 'b2', name: 'Boiled Eggs (2 large)', calories: 140, protein: 13, carbs: 1, fats: 10, time: '08:45 AM' },
-      ],
-      lunch: [
-        { id: 'l1', name: 'Grilled Chicken & Brown Rice Bowl', calories: 580, protein: 46, carbs: 65, fats: 12, time: '01:15 PM' },
-        { id: 'l2', name: 'Olive Oil Tossed Green Salad', calories: 120, protein: 2, carbs: 8, fats: 9, time: '01:15 PM' },
-      ],
-      dinner: [
-        { id: 'd1', name: 'Air-Fried Salmon Fillet', calories: 420, protein: 38, carbs: 0, fats: 24, time: '07:30 PM' },
-        { id: 'd2', name: 'Steamed Sweet Potato & Broccoli', calories: 190, protein: 5, carbs: 42, fats: 1, time: '07:30 PM' },
-      ],
-      snacks: [
-        { id: 's1', name: 'Greek Yogurt with Walnuts', calories: 180, protein: 15, carbs: 12, fats: 8, time: '04:30 PM' },
-      ],
-    },
-    weeklyHistory: [
-      { day: 'Mon', calories: 2180, protein: 138, carbs: 215, fats: 62 },
-      { day: 'Tue', calories: 2290, protein: 148, carbs: 235, fats: 67 },
-      { day: 'Wed', calories: 2050, protein: 132, carbs: 200, fats: 60 },
-      { day: 'Thu', calories: 2310, protein: 150, carbs: 240, fats: 68 },
-      { day: 'Fri', calories: 2190, protein: 140, carbs: 225, fats: 64 },
-      { day: 'Sat', calories: 2400, protein: 142, carbs: 260, fats: 72 },
-      { day: 'Sun', calories: 1980, protein: 131, carbs: 202, fats: 62 },
-    ]
-  },
-  workout: {
-    streak: 4,
-    weeklyGoal: 5,
-    plans: [
-      {
-        id: 'plan_chest',
-        title: 'Chest & Triceps Hypertrophy',
-        category: 'Strength',
-        duration: 45,
-        estimatedCalories: 340,
-        exercises: [
-          {
-            id: 'ex_c1',
-            name: 'Barbell Flat Bench Press',
-            sets: [
-              { setNumber: 1, targetReps: 10, targetWeight: 60 },
-              { setNumber: 2, targetReps: 10, targetWeight: 65 },
-              { setNumber: 3, targetReps: 8, targetWeight: 70 },
-              { setNumber: 4, targetReps: 6, targetWeight: 75 },
-            ]
-          },
-          {
-            id: 'ex_c2',
-            name: 'Incline Dumbbell Press',
-            sets: [
-              { setNumber: 1, targetReps: 12, targetWeight: 22 },
-              { setNumber: 2, targetReps: 10, targetWeight: 24 },
-              { setNumber: 3, targetReps: 10, targetWeight: 24 },
-            ]
-          },
-          {
-            id: 'ex_c3',
-            name: 'Tricep Cable Pushdowns',
-            sets: [
-              { setNumber: 1, targetReps: 15, targetWeight: 20 },
-              { setNumber: 2, targetReps: 12, targetWeight: 25 },
-              { setNumber: 3, targetReps: 12, targetWeight: 25 },
-            ]
-          }
-        ]
-      },
-      {
-        id: 'plan_back',
-        title: 'Back & Biceps Power',
-        category: 'Strength',
-        duration: 50,
-        estimatedCalories: 360,
-        exercises: [
-          {
-            id: 'ex_b1',
-            name: 'Wide-Grip Lat Pulldown',
-            sets: [
-              { setNumber: 1, targetReps: 12, targetWeight: 50 },
-              { setNumber: 2, targetReps: 10, targetWeight: 55 },
-              { setNumber: 3, targetReps: 8, targetWeight: 60 },
-            ]
-          },
-          {
-            id: 'ex_b2',
-            name: 'Bent-Over Barbell Rows',
-            sets: [
-              { setNumber: 1, targetReps: 10, targetWeight: 50 },
-              { setNumber: 2, targetReps: 8, targetWeight: 55 },
-              { setNumber: 3, targetReps: 8, targetWeight: 60 },
-            ]
-          },
-          {
-            id: 'ex_b3',
-            name: 'Standing Incline Bicep Curls',
-            sets: [
-              { setNumber: 1, targetReps: 12, targetWeight: 14 },
-              { setNumber: 2, targetReps: 10, targetWeight: 16 },
-              { setNumber: 3, targetReps: 10, targetWeight: 16 },
-            ]
-          }
-        ]
-      },
-      {
-        id: 'plan_legs',
-        title: 'Legs & Core Foundation',
-        category: 'Strength',
-        duration: 55,
-        estimatedCalories: 420,
-        exercises: [
-          {
-            id: 'ex_l1',
-            name: 'Barbell Back Squats',
-            sets: [
-              { setNumber: 1, targetReps: 10, targetWeight: 70 },
-              { setNumber: 2, targetReps: 8, targetWeight: 80 },
-              { setNumber: 3, targetReps: 6, targetWeight: 90 },
-              { setNumber: 4, targetReps: 6, targetWeight: 90 },
-            ]
-          },
-          {
-            id: 'ex_l2',
-            name: 'Romanian Deadlifts (RDL)',
-            sets: [
-              { setNumber: 1, targetReps: 10, targetWeight: 60 },
-              { setNumber: 2, targetReps: 10, targetWeight: 70 },
-              { setNumber: 3, targetReps: 8, targetWeight: 80 },
-            ]
-          },
-          {
-            id: 'ex_l3',
-            name: 'Hanging Leg Raises',
-            sets: [
-              { setNumber: 1, targetReps: 15, targetWeight: 0 },
-              { setNumber: 2, targetReps: 15, targetWeight: 0 },
-              { setNumber: 3, targetReps: 12, targetWeight: 0 },
-            ]
-          }
-        ]
-      }
-    ],
-    todayWorkouts: [
-      {
-        id: 'w1',
-        title: 'Chest & Triceps Hypertrophy',
-        category: 'Strength',
-        duration: 48,
-        calories: 350,
-        time: '10:30 AM',
-        totalTUTSeconds: 462,
-        totalRestSeconds: 1240,
-        totalVolumeKg: 4650,
-        exercises: [
-          {
-            name: 'Barbell Flat Bench Press',
-            sets: [
-              { setNumber: 1, weight: 60, reps: 10, tutSeconds: 38, restSeconds: 90 },
-              { setNumber: 2, weight: 65, reps: 10, tutSeconds: 42, restSeconds: 95 },
-              { setNumber: 3, weight: 70, reps: 8, tutSeconds: 36, restSeconds: 120 },
-              { setNumber: 4, weight: 75, reps: 6, tutSeconds: 32, restSeconds: 110 },
-            ]
-          },
-          {
-            name: 'Incline Dumbbell Press',
-            sets: [
-              { setNumber: 1, weight: 22, reps: 12, tutSeconds: 45, restSeconds: 90 },
-              { setNumber: 2, weight: 24, reps: 10, tutSeconds: 40, restSeconds: 90 },
-              { setNumber: 3, weight: 24, reps: 10, tutSeconds: 39, restSeconds: 90 },
-            ]
-          },
-          {
-            name: 'Tricep Cable Pushdowns',
-            sets: [
-              { setNumber: 1, weight: 20, reps: 15, tutSeconds: 50, restSeconds: 60 },
-              { setNumber: 2, weight: 25, reps: 12, tutSeconds: 46, restSeconds: 60 },
-              { setNumber: 3, weight: 25, reps: 12, tutSeconds: 44, restSeconds: 0 },
-            ]
-          }
-        ]
-      }
-    ],
-    weeklyHistory: [
-      { day: 'Mon', minutes: 50, calories: 360, completed: true },
-      { day: 'Tue', minutes: 45, calories: 310, completed: true },
-      { day: 'Wed', minutes: 0, calories: 0, completed: false },
-      { day: 'Thu', minutes: 60, calories: 420, completed: true },
-      { day: 'Fri', minutes: 40, calories: 290, completed: true },
-      { day: 'Sat', minutes: 48, calories: 350, completed: true },
-      { day: 'Sun', minutes: 0, calories: 0, completed: false },
-    ]
-  },
-  care: {
-    skinMood: 'Glowing & Clear',
-    skinRoutineAM: [
-      { id: 'am-1', step: 'Gentle Hydrating Cleanser', completed: true, time: '08:00 AM' },
-      { id: 'am-2', step: 'Niacinamide 10% Serum', completed: true, time: '08:05 AM' },
-      { id: 'am-3', step: 'Ceramide Barrier Cream', completed: true, time: '08:08 AM' },
-      { id: 'am-4', step: 'SPF 50+ Broad Spectrum Sunscreen', completed: true, time: '08:10 AM' },
-    ],
-    skinRoutinePM: [
-      { id: 'pm-1', step: 'Micellar Water / Oil Cleanser', completed: false, time: null },
-      { id: 'pm-2', step: 'Foaming Amino Cleanser', completed: false, time: null },
-      { id: 'pm-3', step: 'Retinoid 0.2% Emulsion', completed: false, time: null },
-      { id: 'pm-4', step: 'Peptide Deep Night Recovery Balm', completed: false, time: null },
-    ],
-    pillAnalytics: {
-      overallAdherence: 87,
-      totalTaken: 130,
-      totalScheduled: 150,
-      totalMissed: 20,
-      dates: ['Sep 7', 'Sep 8', 'Sep 9', 'Sep 10', 'Sep 11', 'Sep 12', 'Sep 13', 'Sep 14', 'Sep 15', 'Sep 16', 'Sep 17', 'Sep 18', 'Sep 19', 'Today'],
-      dayNames: ['M', 'T', 'W', 'T', 'F', 'S', 'S', 'M', 'T', 'W', 'T', 'F', 'S', 'Now']
-    },
-    pills: [
-      {
-        id: 'p1',
-        name: 'Vitamin D3 (5000 IU)',
-        shortName: 'Vitamin D',
-        dosage: '1 softgel',
-        time: '08:30 AM',
-        withFood: true,
-        taken: true,
-        takenAt: '08:35 AM',
-        totalTakenDays: 26,
-        totalScheduledDays: 30,
-        adherence: 87,
-        missedDoses: 4,
-        instructions: 'Take in the morning with a healthy fat source (avocado or eggs) for optimal bioavailability.',
-        heatmapHistory: [1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1],
-        monthlyHistory: [
-          1, 1, 1, 0, 1, 1, 1, 1, 1, 0,
-          1, 1, 1, 1, 0, 1, 1, 1, 1, 1,
-          1, 1, 0, 1, 1, 1, 1, 1, 1, 1
-        ]
-      },
-      {
-        id: 'p2',
-        name: 'Omega-3 Fish Oil (1200mg)',
-        shortName: 'Omega-3',
-        dosage: '2 capsules',
-        time: '01:00 PM',
-        withFood: true,
-        taken: true,
-        takenAt: '01:25 PM',
-        totalTakenDays: 28,
-        totalScheduledDays: 30,
-        adherence: 93,
-        missedDoses: 2,
-        instructions: 'Take with lunch or dinner to enhance EPA/DHA lipid absorption.',
-        heatmapHistory: [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1],
-        monthlyHistory: [
-          1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-          1, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-          1, 1, 1, 0, 1, 1, 1, 1, 1, 1
-        ]
-      },
-      {
-        id: 'p3',
-        name: 'Magnesium Glycinate (200mg)',
-        shortName: 'Magnesium',
-        dosage: '1 tablet',
-        time: '09:30 PM',
-        withFood: false,
-        taken: false,
-        takenAt: null,
-        totalTakenDays: 25,
-        totalScheduledDays: 30,
-        adherence: 83,
-        missedDoses: 5,
-        instructions: 'Take 30-45 minutes before sleep for nervous system relaxation and deep restorative REM sleep.',
-        heatmapHistory: [1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 2],
-        monthlyHistory: [
-          1, 0, 1, 1, 1, 1, 0, 1, 1, 1,
-          0, 1, 1, 1, 1, 1, 0, 1, 1, 1,
-          1, 1, 1, 1, 0, 1, 1, 1, 1, 2
-        ]
-      },
-      {
-        id: 'p4',
-        name: 'Zinc Picolinate (25mg)',
-        shortName: 'Zinc',
-        dosage: '1 capsule',
-        time: '10:00 PM',
-        withFood: false,
-        taken: false,
-        takenAt: null,
-        totalTakenDays: 27,
-        totalScheduledDays: 30,
-        adherence: 90,
-        missedDoses: 3,
-        instructions: 'Supports immune defenses and hormonal balance. Avoid taking with high-calcium dairy.',
-        heatmapHistory: [1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 2],
-        monthlyHistory: [
-          1, 1, 0, 1, 1, 1, 1, 1, 1, 1,
-          0, 1, 1, 1, 1, 1, 1, 1, 0, 1,
-          1, 1, 1, 1, 1, 1, 1, 1, 1, 2
-        ]
-      },
-      {
-        id: 'p5',
-        name: 'Probiotic Complex (50B CFU)',
-        shortName: 'Probiotics',
-        dosage: '1 capsule',
-        time: '07:30 AM',
-        withFood: false,
-        taken: true,
-        takenAt: '07:35 AM',
-        totalTakenDays: 24,
-        totalScheduledDays: 30,
-        adherence: 80,
-        missedDoses: 6,
-        instructions: 'Take on an empty stomach with a full glass of water upon waking.',
-        heatmapHistory: [1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1],
-        monthlyHistory: [
-          1, 1, 1, 1, 0, 1, 1, 0, 1, 1,
-          1, 1, 0, 1, 1, 1, 1, 0, 1, 1,
-          1, 0, 1, 1, 1, 1, 0, 1, 1, 1
-        ]
-      }
-    ]
-  },
-  profile: {
-    name: 'Alex Rivera',
-    age: 27,
-    gender: 'Athletic',
-    height: 178, // cm
-    weight: 71.5, // kg
-    targetWeight: 69.0, // kg
-    goal: 'Lean Muscle & Metabolic Health',
-    activityLevel: 'Active (4-5 days/week)',
-    avatarUrl: null,
-  },
-  notifications: {
-    enabled: true,
-    hydration: true,
-    medications: true,
-    workouts: true,
-    sound: true,
-  },
-  userRating: null,
-  fapCounterEnabled: false,
-  subscription: {
-    plan: 'pro',
-    status: 'active',
-    billingCycle: 'monthly',
-    price: '$9.99/mo',
-    renewalDate: 'Oct 15, 2026',
-    startDate: 'Jan 15, 2026',
-    paymentMethod: 'Apple Pay (Mastercard •••• 4242)',
-    paymentHistory: [
-      { id: 'INV-2026-009', date: 'Sep 15, 2026', amount: '$9.99', status: 'Paid', method: 'Apple Pay', plan: 'VitalSync Pro Monthly' },
-      { id: 'INV-2026-008', date: 'Aug 15, 2026', amount: '$9.99', status: 'Paid', method: 'Apple Pay', plan: 'VitalSync Pro Monthly' },
-      { id: 'INV-2026-007', date: 'Jul 15, 2026', amount: '$9.99', status: 'Paid', method: 'Apple Pay', plan: 'VitalSync Pro Monthly' },
-      { id: 'INV-2026-006', date: 'Jun 15, 2026', amount: '$9.99', status: 'Paid', method: 'Apple Pay', plan: 'VitalSync Pro Monthly' },
-      { id: 'INV-2026-005', date: 'May 15, 2026', amount: '$9.99', status: 'Paid', method: 'Apple Pay', plan: 'VitalSync Pro Monthly' },
-    ],
-    planHistory: [
-      { id: 'ph-1', planName: 'VitalSync Pro (Monthly)', period: 'May 15, 2026 – Present', price: '$9.99/mo', status: 'Active', notes: 'Auto-renews monthly via Apple Pay' },
-      { id: 'ph-2', planName: 'VitalSync Pro (14-Day Free Trial)', period: 'Jan 15, 2026 – Jan 29, 2026', price: '$0.00', status: 'Completed', notes: 'Converted to Pro Monthly' },
-      { id: 'ph-3', planName: 'VitalSync Free Tier', period: 'Jan 10, 2026 – Jan 15, 2026', price: '$0.00', status: 'Upgraded', notes: 'Initial account sign up' }
-    ]
-  },
-  auth: {
-    isLoggedIn: true,
-    email: 'alex.rivera@vitalsync.health',
-    joinedDate: 'January 2026',
-  }
-};
-
 export function AppProvider({ children }) {
-  const [data, setData] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return {
-          ...INITIAL_DATA,
-          ...parsed,
-          diet: {
-            ...INITIAL_DATA.diet,
-            ...(parsed.diet || {}),
-            targetMacros: {
-              ...INITIAL_DATA.diet.targetMacros,
-              ...(parsed.diet?.targetMacros || {}),
-            },
-            meals: {
-              ...INITIAL_DATA.diet.meals,
-              ...(parsed.diet?.meals || {}),
-            },
-            customMeals: (parsed.diet?.customMeals && parsed.diet.customMeals.length > 0)
-              ? parsed.diet.customMeals
-              : INITIAL_DATA.diet.customMeals,
-          },
-          water: {
-            ...INITIAL_DATA.water,
-            ...(parsed.water || {}),
-          },
-          workout: {
-            ...INITIAL_DATA.workout,
-            ...(parsed.workout || {}),
-          },
-          care: {
-            ...INITIAL_DATA.care,
-            ...(parsed.care || {}),
-          },
-          profile: {
-            ...INITIAL_DATA.profile,
-            ...(parsed.profile || {}),
-          },
-          notifications: {
-            ...INITIAL_DATA.notifications,
-            ...(parsed.notifications || {}),
-          },
-          userRating: parsed.userRating || null,
-          subscription: {
-            ...INITIAL_DATA.subscription,
-            ...(parsed.subscription || {}),
-            paymentHistory: parsed.subscription?.paymentHistory || INITIAL_DATA.subscription.paymentHistory,
-            planHistory: parsed.subscription?.planHistory || INITIAL_DATA.subscription.planHistory,
-          },
-          auth: {
-            ...INITIAL_DATA.auth,
-            ...(parsed.auth || {}),
-          },
-        };
-      }
-    } catch (e) {
-      console.error('Failed to load storage:', e);
-    }
-    return INITIAL_DATA;
-  });
+  const [data, setData] = useState(INITIAL_DATA);
+  const [isDbReady, setIsDbReady] = useState(false);
 
+  // App Navigation State
   const [activeTab, setActiveTab] = useState('water');
-  const [currentPage, setCurrentPage] = useState('main'); // 'main' | 'profile' | 'settings'
+  const [currentPage, setCurrentPage] = useState('main'); // 'main' | 'profile' | 'settings' | 'faq' | 'privacy'
   const [previousTab, setPreviousTab] = useState('water');
   const [isFullScreenPage, setIsFullScreenPage] = useState(false);
 
-  const openProfilePage = () => {
-    if (activeTab !== 'profile') {
-      setPreviousTab(activeTab);
-    }
-    setCurrentPage('profile');
-  };
-
-  const closeProfilePage = () => {
-    setCurrentPage('main');
-  };
-
-  const openSettingsPage = () => {
-    setCurrentPage('settings');
-  };
-
-  const closeSettingsPage = () => {
-    setCurrentPage('profile');
-  };
-
-  const openFaqPage = () => {
-    setCurrentPage('faq');
-  };
-
-  const closeFaqPage = () => {
-    setCurrentPage('settings');
-  };
-
-  const openPrivacyPage = () => {
-    setCurrentPage('privacy');
-  };
-
-  const closePrivacyPage = () => {
-    setCurrentPage('settings');
-  };
-
-  const toggleFapCounter = () => {
-    setData(prev => ({
-      ...prev,
-      fapCounterEnabled: !prev.fapCounterEnabled
-    }));
-  };
-
-  // Persist state changes
+  // Initialize Dexie IndexedDB on startup
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (e) {
-      console.error('Failed to save state:', e);
-    }
-  }, [data]);
+    let isMounted = true;
+    initDatabase().then(loadedState => {
+      if (isMounted) {
+        setData(loadedState);
+        setIsDbReady(true);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
-  // Apply theme to document
+  // Apply theme to document element
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', data.theme || 'dark');
   }, [data.theme]);
 
-  // Theme Toggle & Set
+  /* ================= THEME ACTIONS ================= */
   const toggleTheme = () => {
-    setData(prev => ({
-      ...prev,
-      theme: prev.theme === 'dark' ? 'light' : 'dark'
-    }));
+    setData(prev => {
+      const nextTheme = prev.theme === 'dark' ? 'light' : 'dark';
+      dbSaveAppStateKey('theme', nextTheme).catch(console.error);
+      return { ...prev, theme: nextTheme };
+    });
   };
 
   const setTheme = (theme) => {
-    setData(prev => ({
-      ...prev,
-      theme
-    }));
+    setData(prev => {
+      dbSaveAppStateKey('theme', theme).catch(console.error);
+      return { ...prev, theme };
+    });
   };
-
 
   /* ================= WATER ACTIONS ================= */
   const addWater = (amount, label = 'Quick Add') => {
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const today = getTodayDateString();
+
     setData(prev => {
       const newCurrent = prev.water.current + amount;
-      const newLogs = [
-        { id: Date.now(), amount, time: timeStr, label },
-        ...prev.water.logs
-      ];
+      const newLog = { id: Date.now(), amount, time: timeStr, label, date: today };
+      const newLogs = [newLog, ...prev.water.logs];
+      const newWeeklyHistory = syncWaterWeeklyHistory(prev.water.weeklyHistory, newCurrent, prev.water.target);
+
+      // Async write to Dexie
+      dbAddWaterLog(newLog).catch(console.error);
+      dbSaveAppStateKey('waterWeeklyHistory', newWeeklyHistory).catch(console.error);
+
       return {
         ...prev,
         water: {
           ...prev.water,
           current: newCurrent,
-          logs: newLogs
-        }
+          logs: newLogs,
+          weeklyHistory: newWeeklyHistory,
+        },
       };
     });
   };
@@ -565,48 +109,78 @@ export function AppProvider({ children }) {
     setData(prev => {
       const targetLog = prev.water.logs.find(l => l.id === id);
       if (!targetLog) return prev;
-      return {
-        ...prev,
-        water: {
-          ...prev.water,
-          current: Math.max(0, prev.water.current - targetLog.amount),
-          logs: prev.water.logs.filter(l => l.id !== id)
-        }
-      };
-    });
-  };
+      const newCurrent = Math.max(0, prev.water.current - targetLog.amount);
+      const newLogs = prev.water.logs.filter(l => l.id !== id);
+      const newWeeklyHistory = syncWaterWeeklyHistory(prev.water.weeklyHistory, newCurrent, prev.water.target);
 
-  const decreaseWater = (amount) => {
-    setData(prev => {
-      const newCurrent = Math.max(0, prev.water.current - amount);
-      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      // Async remove from Dexie
+      dbRemoveWaterLog(id).catch(console.error);
+      dbSaveAppStateKey('waterWeeklyHistory', newWeeklyHistory).catch(console.error);
+
       return {
         ...prev,
         water: {
           ...prev.water,
           current: newCurrent,
-          logs: [
-            { id: Date.now(), amount: -amount, time: timeStr, label: 'Adjustment' },
-            ...prev.water.logs
-          ]
-        }
+          logs: newLogs,
+          weeklyHistory: newWeeklyHistory,
+        },
+      };
+    });
+  };
+
+  const decreaseWater = (amount) => {
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const today = getTodayDateString();
+
+    setData(prev => {
+      const newCurrent = Math.max(0, prev.water.current - amount);
+      const newLog = { id: Date.now(), amount: -amount, time: timeStr, label: 'Adjustment', date: today };
+      const newLogs = [newLog, ...prev.water.logs];
+      const newWeeklyHistory = syncWaterWeeklyHistory(prev.water.weeklyHistory, newCurrent, prev.water.target);
+
+      // Async write to Dexie
+      dbAddWaterLog(newLog).catch(console.error);
+      dbSaveAppStateKey('waterWeeklyHistory', newWeeklyHistory).catch(console.error);
+
+      return {
+        ...prev,
+        water: {
+          ...prev.water,
+          current: newCurrent,
+          logs: newLogs,
+          weeklyHistory: newWeeklyHistory,
+        },
       };
     });
   };
 
   const setWaterTarget = (newTarget) => {
-    setData(prev => ({
-      ...prev,
-      water: { ...prev.water, target: Number(newTarget) }
-    }));
+    const targetNum = Number(newTarget);
+    setData(prev => {
+      const newWeeklyHistory = syncWaterWeeklyHistory(prev.water.weeklyHistory, prev.water.current, targetNum);
+      dbSetWaterTarget(targetNum).catch(console.error);
+      dbSaveAppStateKey('waterWeeklyHistory', newWeeklyHistory).catch(console.error);
+      return {
+        ...prev,
+        water: {
+          ...prev.water,
+          target: targetNum,
+          weeklyHistory: newWeeklyHistory,
+        },
+      };
+    });
   };
 
   /* ================= DIET ACTIONS ================= */
   const addMealItem = (category, item) => {
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const today = getTodayDateString();
+
     const newItem = {
       id: item.id || ('meal_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4)),
       name: item.name,
+      category,
       calories: Number(item.calories) || 0,
       protein: Number(item.protein) || 0,
       carbs: Number(item.carbs) || 0,
@@ -614,92 +188,144 @@ export function AppProvider({ children }) {
       items: item.items || [],
       weight: item.weight || null,
       serving: item.serving || null,
-      time: timeStr
+      time: timeStr,
+      date: today,
     };
 
-    setData(prev => ({
-      ...prev,
-      diet: {
-        ...prev.diet,
-        meals: {
-          ...prev.diet.meals,
-          [category]: [...(prev.diet.meals[category] || []), newItem]
-        }
-      }
-    }));
+    setData(prev => {
+      const updatedCategoryMeals = [...(prev.diet.meals[category] || []), newItem];
+      const updatedMeals = {
+        ...prev.diet.meals,
+        [category]: updatedCategoryMeals,
+      };
+      const updatedWeeklyHistory = syncDietWeeklyHistory(prev.diet.weeklyHistory, updatedMeals);
+
+      // Async write to Dexie
+      dbAddMeal(newItem).catch(console.error);
+      dbSaveAppStateKey('dietWeeklyHistory', updatedWeeklyHistory).catch(console.error);
+
+      return {
+        ...prev,
+        diet: {
+          ...prev.diet,
+          meals: updatedMeals,
+          weeklyHistory: updatedWeeklyHistory,
+        },
+      };
+    });
 
     return newItem;
   };
 
   const removeMealItem = (category, id) => {
-    setData(prev => ({
-      ...prev,
-      diet: {
-        ...prev.diet,
-        meals: {
-          ...prev.diet.meals,
-          [category]: prev.diet.meals[category].filter(item => item.id !== id)
-        }
-      }
-    }));
-  };
-
-  const updateMealItem = (category, updatedItem) => {
-    setData(prev => ({
-      ...prev,
-      diet: {
-        ...prev.diet,
-        meals: {
-          ...prev.diet.meals,
-          [category]: (prev.diet.meals[category] || []).map(item =>
-            item.id === updatedItem.id ? { ...item, ...updatedItem } : item
-          )
-        }
-      }
-    }));
-  };
-
-  const saveCustomMeal = (customMeal) => {
     setData(prev => {
-      const existing = (prev.diet.customMeals || []).filter(m => m.id !== customMeal.id);
+      const updatedCategoryMeals = (prev.diet.meals[category] || []).filter(item => item.id !== id);
+      const updatedMeals = {
+        ...prev.diet.meals,
+        [category]: updatedCategoryMeals,
+      };
+      const updatedWeeklyHistory = syncDietWeeklyHistory(prev.diet.weeklyHistory, updatedMeals);
+
+      // Async remove from Dexie
+      dbRemoveMeal(id).catch(console.error);
+      dbSaveAppStateKey('dietWeeklyHistory', updatedWeeklyHistory).catch(console.error);
+
       return {
         ...prev,
         diet: {
           ...prev.diet,
-          customMeals: [customMeal, ...existing]
-        }
+          meals: updatedMeals,
+          weeklyHistory: updatedWeeklyHistory,
+        },
+      };
+    });
+  };
+
+  const updateMealItem = (category, updatedItem) => {
+    setData(prev => {
+      const updatedCategoryMeals = (prev.diet.meals[category] || []).map(item =>
+        item.id === updatedItem.id ? { ...item, ...updatedItem, category } : item
+      );
+      const updatedMeals = {
+        ...prev.diet.meals,
+        [category]: updatedCategoryMeals,
+      };
+      const updatedWeeklyHistory = syncDietWeeklyHistory(prev.diet.weeklyHistory, updatedMeals);
+
+      // Async write to Dexie
+      dbUpdateMeal({ ...updatedItem, category }).catch(console.error);
+      dbSaveAppStateKey('dietWeeklyHistory', updatedWeeklyHistory).catch(console.error);
+
+      return {
+        ...prev,
+        diet: {
+          ...prev.diet,
+          meals: updatedMeals,
+          weeklyHistory: updatedWeeklyHistory,
+        },
+      };
+    });
+  };
+
+  const saveCustomMeal = (customMeal) => {
+    const mealWithId = {
+      ...customMeal,
+      id: customMeal.id || ('custom_' + Date.now()),
+    };
+
+    setData(prev => {
+      const existing = (prev.diet.customMeals || []).filter(m => m.id !== mealWithId.id);
+      const updated = [mealWithId, ...existing];
+
+      // Async write to Dexie
+      dbSaveCustomMeal(mealWithId).catch(console.error);
+
+      return {
+        ...prev,
+        diet: {
+          ...prev.diet,
+          customMeals: updated,
+        },
       };
     });
   };
 
   const deleteCustomMeal = (mealId) => {
-    setData(prev => ({
-      ...prev,
-      diet: {
-        ...prev.diet,
-        customMeals: (prev.diet.customMeals || []).filter(m => m.id !== mealId)
-      }
-    }));
+    setData(prev => {
+      const updated = (prev.diet.customMeals || []).filter(m => m.id !== mealId);
+      dbDeleteCustomMeal(mealId).catch(console.error);
+      return {
+        ...prev,
+        diet: {
+          ...prev.diet,
+          customMeals: updated,
+        },
+      };
+    });
   };
 
   const updateDietTargets = (calories, protein, carbs, fats) => {
-    setData(prev => ({
-      ...prev,
-      diet: {
-        ...prev.diet,
-        targetCalories: Number(calories),
-        targetMacros: {
-          protein: Number(protein),
-          carbs: Number(carbs),
-          fats: Number(fats)
-        }
-      }
-    }));
+    const c = Number(calories);
+    const macros = { protein: Number(protein), carbs: Number(carbs), fats: Number(fats) };
+
+    setData(prev => {
+      dbUpdateDietTargets(c, macros).catch(console.error);
+      return {
+        ...prev,
+        diet: {
+          ...prev.diet,
+          targetCalories: c,
+          targetMacros: macros,
+        },
+      };
+    });
   };
 
   /* ================= WORKOUT ACTIONS ================= */
   const addWorkout = (workout) => {
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const today = getTodayDateString();
+
     const newWorkout = {
       id: 'work_' + Date.now(),
       title: workout.title || 'Workout Session',
@@ -707,56 +333,88 @@ export function AppProvider({ children }) {
       duration: Number(workout.duration) || 30,
       calories: Number(workout.calories) || 200,
       time: timeStr,
-      exercises: workout.exercises || []
+      date: today,
+      exercises: workout.exercises || [],
+      totalTUTSeconds: workout.totalTUTSeconds || 0,
+      totalRestSeconds: workout.totalRestSeconds || 0,
+      totalVolumeKg: workout.totalVolumeKg || 0,
     };
 
-    setData(prev => ({
-      ...prev,
-      workout: {
-        ...prev.workout,
-        todayWorkouts: [newWorkout, ...prev.workout.todayWorkouts]
-      }
-    }));
-  };
-
-  const saveWorkoutPlan = (plan) => {
     setData(prev => {
-      const existingPlans = prev.workout.plans || [];
-      const exists = existingPlans.some(p => p.id === plan.id);
-      let updatedPlans;
-      if (exists) {
-        updatedPlans = existingPlans.map(p => p.id === plan.id ? plan : p);
-      } else {
-        updatedPlans = [...existingPlans, { ...plan, id: plan.id || 'plan_' + Date.now() }];
-      }
+      const updatedSessions = [newWorkout, ...prev.workout.todayWorkouts];
+      const updatedWeeklyHistory = syncWorkoutWeeklyHistory(prev.workout.weeklyHistory, updatedSessions);
+
+      // Async write to Dexie
+      dbAddWorkoutSession(newWorkout).catch(console.error);
+      dbSaveAppStateKey('workoutWeeklyHistory', updatedWeeklyHistory).catch(console.error);
+
       return {
         ...prev,
         workout: {
           ...prev.workout,
-          plans: updatedPlans
-        }
+          todayWorkouts: updatedSessions,
+          weeklyHistory: updatedWeeklyHistory,
+        },
+      };
+    });
+  };
+
+  const removeWorkout = (id) => {
+    setData(prev => {
+      const updatedSessions = prev.workout.todayWorkouts.filter(w => w.id !== id);
+      const updatedWeeklyHistory = syncWorkoutWeeklyHistory(prev.workout.weeklyHistory, updatedSessions);
+
+      dbRemoveWorkoutSession(id).catch(console.error);
+      dbSaveAppStateKey('workoutWeeklyHistory', updatedWeeklyHistory).catch(console.error);
+
+      return {
+        ...prev,
+        workout: {
+          ...prev.workout,
+          todayWorkouts: updatedSessions,
+          weeklyHistory: updatedWeeklyHistory,
+        },
+      };
+    });
+  };
+
+  const saveWorkoutPlan = (plan) => {
+    const planWithId = {
+      ...plan,
+      id: plan.id || ('plan_' + Date.now()),
+    };
+
+    setData(prev => {
+      const existingPlans = prev.workout.plans || [];
+      const exists = existingPlans.some(p => p.id === planWithId.id);
+      const updatedPlans = exists
+        ? existingPlans.map(p => (p.id === planWithId.id ? planWithId : p))
+        : [...existingPlans, planWithId];
+
+      dbSaveWorkoutPlan(planWithId).catch(console.error);
+
+      return {
+        ...prev,
+        workout: {
+          ...prev.workout,
+          plans: updatedPlans,
+        },
       };
     });
   };
 
   const deleteWorkoutPlan = (planId) => {
-    setData(prev => ({
-      ...prev,
-      workout: {
-        ...prev.workout,
-        plans: (prev.workout.plans || []).filter(p => p.id !== planId)
-      }
-    }));
-  };
-
-  const removeWorkout = (id) => {
-    setData(prev => ({
-      ...prev,
-      workout: {
-        ...prev.workout,
-        todayWorkouts: prev.workout.todayWorkouts.filter(w => w.id !== id)
-      }
-    }));
+    setData(prev => {
+      const updated = (prev.workout.plans || []).filter(p => p.id !== planId);
+      dbDeleteWorkoutPlan(planId).catch(console.error);
+      return {
+        ...prev,
+        workout: {
+          ...prev.workout,
+          plans: updated,
+        },
+      };
+    });
   };
 
   /* ================= CARE & PILLS ACTIONS ================= */
@@ -764,22 +422,31 @@ export function AppProvider({ children }) {
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     setData(prev => {
       const listKey = routineType === 'AM' ? 'skinRoutineAM' : 'skinRoutinePM';
+      let modifiedStep = null;
+      const updatedList = prev.care[listKey].map(step => {
+        if (step.id === id) {
+          const nextState = !step.completed;
+          modifiedStep = {
+            ...step,
+            routineType,
+            completed: nextState,
+            time: nextState ? timeStr : null,
+          };
+          return modifiedStep;
+        }
+        return step;
+      });
+
+      if (modifiedStep) {
+        dbSaveSkincareStep(modifiedStep).catch(console.error);
+      }
+
       return {
         ...prev,
         care: {
           ...prev.care,
-          [listKey]: prev.care[listKey].map(step => {
-            if (step.id === id) {
-              const nextState = !step.completed;
-              return {
-                ...step,
-                completed: nextState,
-                time: nextState ? timeStr : null
-              };
-            }
-            return step;
-          })
-        }
+          [listKey]: updatedList,
+        },
       };
     });
   };
@@ -788,80 +455,34 @@ export function AppProvider({ children }) {
     const listKey = routineType === 'AM' ? 'skinRoutineAM' : 'skinRoutinePM';
     const newStep = {
       id: 'step_' + Date.now(),
+      routineType,
       step: stepName,
       completed: false,
-      time: null
+      time: null,
     };
 
-    setData(prev => ({
-      ...prev,
-      care: {
-        ...prev.care,
-        [listKey]: [...prev.care[listKey], newStep]
-      }
-    }));
-  };
-
-  const setSkinMood = (mood) => {
-    setData(prev => ({
-      ...prev,
-      care: {
-        ...prev.care,
-        skinMood: mood
-      }
-    }));
-  };
-
-  const togglePillTaken = (id) => {
-    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setData(prev => ({
-      ...prev,
-      care: {
-        ...prev.care,
-        pills: prev.care.pills.map(p => {
-          if (p.id === id) {
-            const nextTaken = !p.taken;
-            return {
-              ...p,
-              taken: nextTaken,
-              takenAt: nextTaken ? timeStr : null
-            };
-          }
-          return p;
-        })
-      }
-    }));
-  };
-
-  const addPill = (pill) => {
-    const newPill = {
-      id: 'pill_' + Date.now(),
-      name: pill.name,
-      dosage: pill.dosage || '1 dose',
-      time: pill.time || '09:00 AM',
-      withFood: !!pill.withFood,
-      taken: false,
-      takenAt: null
-    };
-
-    setData(prev => ({
-      ...prev,
-      care: {
-        ...prev.care,
-        pills: [...prev.care.pills, newPill]
-      }
-    }));
+    setData(prev => {
+      dbSaveSkincareStep(newStep).catch(console.error);
+      return {
+        ...prev,
+        care: {
+          ...prev.care,
+          [listKey]: [...prev.care[listKey], newStep],
+        },
+      };
+    });
   };
 
   const removeSkinStep = (routineType, id) => {
     setData(prev => {
       const listKey = routineType === 'AM' ? 'skinRoutineAM' : 'skinRoutinePM';
+      dbDeleteSkincareStep(id).catch(console.error);
       return {
         ...prev,
         care: {
           ...prev.care,
-          [listKey]: prev.care[listKey].filter(step => step.id !== id)
-        }
+          [listKey]: prev.care[listKey].filter(step => step.id !== id),
+        },
       };
     });
   };
@@ -869,125 +490,234 @@ export function AppProvider({ children }) {
   const updateSkinStep = (routineType, id, newStepName) => {
     setData(prev => {
       const listKey = routineType === 'AM' ? 'skinRoutineAM' : 'skinRoutinePM';
+      let updatedStep = null;
+      const updatedList = prev.care[listKey].map(step => {
+        if (step.id === id) {
+          updatedStep = { ...step, routineType, step: newStepName };
+          return updatedStep;
+        }
+        return step;
+      });
+
+      if (updatedStep) {
+        dbSaveSkincareStep(updatedStep).catch(console.error);
+      }
+
       return {
         ...prev,
         care: {
           ...prev.care,
-          [listKey]: prev.care[listKey].map(step => {
-            if (step.id === id) {
-              return { ...step, step: newStepName };
-            }
-            return step;
-          })
+          [listKey]: updatedList,
+        },
+      };
+    });
+  };
+
+  const setSkinMood = (mood) => {
+    setData(prev => {
+      dbSaveAppStateKey('skinMood', mood).catch(console.error);
+      return {
+        ...prev,
+        care: {
+          ...prev.care,
+          skinMood: mood,
+        },
+      };
+    });
+  };
+
+  const togglePillTaken = (id) => {
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    setData(prev => {
+      let updatedPill = null;
+      const updatedPills = prev.care.pills.map(p => {
+        if (p.id === id) {
+          const nextTaken = !p.taken;
+          const heatmap = [...(p.heatmapHistory || [1, 1, 1, 1, 1, 1, 0])];
+          heatmap[heatmap.length - 1] = nextTaken ? 1 : 0;
+
+          const totalTaken = nextTaken
+            ? (p.totalTakenDays || 25) + 1
+            : Math.max(0, (p.totalTakenDays || 26) - 1);
+          const totalScheduled = p.totalScheduledDays || 30;
+          const adherence = Math.round((totalTaken / totalScheduled) * 100);
+
+          updatedPill = {
+            ...p,
+            taken: nextTaken,
+            takenAt: nextTaken ? timeStr : null,
+            totalTakenDays: totalTaken,
+            adherence,
+            heatmapHistory: heatmap,
+          };
+          return updatedPill;
         }
+        return p;
+      });
+
+      if (updatedPill) {
+        dbSavePill(updatedPill).catch(console.error);
+      }
+
+      return {
+        ...prev,
+        care: {
+          ...prev.care,
+          pills: updatedPills,
+        },
+      };
+    });
+  };
+
+  const addPill = (pill) => {
+    const newPill = {
+      id: 'pill_' + Date.now(),
+      name: pill.name,
+      shortName: pill.shortName || pill.name.split(' ')[0],
+      dosage: pill.dosage || '1 dose',
+      time: pill.time || '09:00 AM',
+      withFood: !!pill.withFood,
+      taken: false,
+      takenAt: null,
+      totalTakenDays: 0,
+      totalScheduledDays: 30,
+      adherence: 0,
+      missedDoses: 0,
+      instructions: pill.instructions || '',
+      heatmapHistory: [0, 0, 0, 0, 0, 0, 0],
+      monthlyHistory: Array(30).fill(0),
+    };
+
+    setData(prev => {
+      dbSavePill(newPill).catch(console.error);
+      return {
+        ...prev,
+        care: {
+          ...prev.care,
+          pills: [...prev.care.pills, newPill],
+        },
       };
     });
   };
 
   const updatePill = (id, updatedFields) => {
-    setData(prev => ({
-      ...prev,
-      care: {
-        ...prev.care,
-        pills: prev.care.pills.map(p => {
-          if (p.id === id) {
-            return { ...p, ...updatedFields };
-          }
-          return p;
-        })
+    setData(prev => {
+      let updatedPill = null;
+      const updatedPills = prev.care.pills.map(p => {
+        if (p.id === id) {
+          updatedPill = { ...p, ...updatedFields };
+          return updatedPill;
+        }
+        return p;
+      });
+
+      if (updatedPill) {
+        dbSavePill(updatedPill).catch(console.error);
       }
-    }));
+
+      return {
+        ...prev,
+        care: {
+          ...prev.care,
+          pills: updatedPills,
+        },
+      };
+    });
   };
 
   const removePill = (id) => {
-    setData(prev => ({
-      ...prev,
-      care: {
-        ...prev.care,
-        pills: prev.care.pills.filter(p => p.id !== id)
-      }
-    }));
+    setData(prev => {
+      dbDeletePill(id).catch(console.error);
+      return {
+        ...prev,
+        care: {
+          ...prev.care,
+          pills: prev.care.pills.filter(p => p.id !== id),
+        },
+      };
+    });
   };
 
   /* ================= PROFILE ACTIONS ================= */
   const updateProfile = (profileUpdate) => {
-    setData(prev => ({
-      ...prev,
-      profile: {
-        ...prev.profile,
-        ...profileUpdate
-      }
-    }));
+    setData(prev => {
+      const updated = { ...prev.profile, ...profileUpdate };
+      dbSaveAppStateKey('profile', updated).catch(console.error);
+      return {
+        ...prev,
+        profile: updated,
+      };
+    });
   };
 
-  const resetAllData = () => {
-    setData(INITIAL_DATA);
-    localStorage.removeItem(STORAGE_KEY);
+  const resetAllData = async () => {
+    const freshState = await resetDatabase();
+    setData(freshState);
   };
 
-  const importData = (importedJson) => {
+  const importData = async (importedJson) => {
     try {
-      const parsed = JSON.parse(importedJson);
-      setData(parsed);
-      return true;
+      const newState = await importDatabaseFromJson(importedJson);
+      if (newState) {
+        setData(newState);
+        return true;
+      }
+      return false;
     } catch {
       return false;
     }
   };
 
-  /* ================= NOTIFICATIONS, RATING & AUTH ACTIONS ================= */
+  /* ================= NOTIFICATIONS, RATING & AUTH ================= */
   const toggleNotification = (key) => {
     setData(prev => {
       const current = prev.notifications || INITIAL_DATA.notifications;
-      if (key === 'enabled') {
-        const nextState = !current.enabled;
-        return {
-          ...prev,
-          notifications: {
-            ...current,
-            enabled: nextState,
-          }
-        };
-      }
+      const updated =
+        key === 'enabled'
+          ? { ...current, enabled: !current.enabled }
+          : { ...current, [key]: !current[key] };
+
+      dbSaveAppStateKey('notifications', updated).catch(console.error);
       return {
         ...prev,
-        notifications: {
-          ...current,
-          [key]: !current[key],
-        }
+        notifications: updated,
       };
     });
   };
 
   const saveRating = (ratingData) => {
-    setData(prev => ({
-      ...prev,
-      userRating: {
-        ...ratingData,
-        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      }
-    }));
+    const userRating = {
+      ...ratingData,
+      date: new Date().toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }),
+    };
+    setData(prev => {
+      dbSaveAppStateKey('userRating', userRating).catch(console.error);
+      return { ...prev, userRating };
+    });
   };
 
   const logoutUser = () => {
-    setData(prev => ({
-      ...prev,
-      auth: {
-        ...prev.auth,
-        isLoggedIn: false,
-      }
-    }));
+    setData(prev => {
+      const updatedAuth = { ...prev.auth, isLoggedIn: false };
+      dbSaveAppStateKey('auth', updatedAuth).catch(console.error);
+      return { ...prev, auth: updatedAuth };
+    });
   };
 
   const loginUser = (email = 'alex.rivera@vitalsync.health') => {
-    setData(prev => ({
-      ...prev,
-      auth: {
+    setData(prev => {
+      const updatedAuth = {
         isLoggedIn: true,
         email,
         joinedDate: prev.auth?.joinedDate || 'January 2026',
-      }
-    }));
+      };
+      dbSaveAppStateKey('auth', updatedAuth).catch(console.error);
+      return { ...prev, auth: updatedAuth };
+    });
   };
 
   const switchSubscriptionPlan = (targetPlan) => {
@@ -995,7 +725,11 @@ export function AppProvider({ children }) {
       const currentPlan = prev.subscription?.plan || 'pro';
       const newPlan = targetPlan || (currentPlan === 'pro' ? 'free' : 'pro');
       const isPro = newPlan === 'pro';
-      const todayStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const todayStr = new Date().toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
 
       const newHistoryItem = {
         id: `ph-${Date.now()}`,
@@ -1003,34 +737,65 @@ export function AppProvider({ children }) {
         period: `${todayStr} – Present`,
         price: isPro ? '$9.99/mo' : '$0.00',
         status: 'Active',
-        notes: isPro ? 'Upgraded to Pro Membership' : 'Switched to Free Tier'
+        notes: isPro ? 'Upgraded to Pro Membership' : 'Switched to Free Tier',
       };
+
+      const updatedSubscription = {
+        ...prev.subscription,
+        plan: newPlan,
+        price: isPro ? '$9.99/mo' : '$0.00',
+        renewalDate: isPro ? 'Oct 15, 2026' : 'None (Lifetime Free)',
+        status: 'active',
+        planHistory: [newHistoryItem, ...(prev.subscription?.planHistory || [])],
+      };
+
+      dbSaveAppStateKey('subscription', updatedSubscription).catch(console.error);
 
       return {
         ...prev,
-        subscription: {
-          ...prev.subscription,
-          plan: newPlan,
-          price: isPro ? '$9.99/mo' : '$0.00',
-          renewalDate: isPro ? 'Oct 15, 2026' : 'None (Lifetime Free)',
-          status: 'active',
-          planHistory: [newHistoryItem, ...(prev.subscription?.planHistory || [])]
-        }
+        subscription: updatedSubscription,
       };
     });
   };
 
-  const deleteAccount = () => {
-    localStorage.removeItem(STORAGE_KEY);
-    setData(INITIAL_DATA);
+  const toggleFapCounter = () => {
+    setData(prev => {
+      const nextVal = !prev.fapCounterEnabled;
+      dbSaveAppStateKey('fapCounterEnabled', nextVal).catch(console.error);
+      return {
+        ...prev,
+        fapCounterEnabled: nextVal,
+      };
+    });
+  };
+
+  const deleteAccount = async () => {
+    await resetAllData();
     setCurrentPage('main');
     setActiveTab('water');
   };
+
+  // Profile and Settings navigation helpers
+  const openProfilePage = () => {
+    if (activeTab !== 'profile') {
+      setPreviousTab(activeTab);
+    }
+    setCurrentPage('profile');
+  };
+
+  const closeProfilePage = () => setCurrentPage('main');
+  const openSettingsPage = () => setCurrentPage('settings');
+  const closeSettingsPage = () => setCurrentPage('profile');
+  const openFaqPage = () => setCurrentPage('faq');
+  const closeFaqPage = () => setCurrentPage('settings');
+  const openPrivacyPage = () => setCurrentPage('privacy');
+  const closePrivacyPage = () => setCurrentPage('settings');
 
   return (
     <AppContext.Provider
       value={{
         data,
+        isDbReady,
         activeTab,
         setActiveTab,
         isFullScreenPage,
@@ -1068,6 +833,7 @@ export function AppProvider({ children }) {
         updateProfile,
         resetAllData,
         importData,
+        exportData: exportDatabaseToJson,
         // Page Navigation
         currentPage,
         setCurrentPage,

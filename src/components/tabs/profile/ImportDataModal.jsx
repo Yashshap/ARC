@@ -6,11 +6,11 @@ export default function ImportDataModal({ isOpen, onClose, onImport }) {
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const parsed = JSON.parse(importJsonText);
-      const success = onImport(parsed);
+      const success = await onImport(parsed);
       if (success) {
         setImportJsonText('');
         setImportError('');

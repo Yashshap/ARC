@@ -8,22 +8,21 @@ import AndroidGuideModal from './profile/AndroidGuideModal';
 import ImportDataModal from './profile/ImportDataModal';
 
 export default function ProfileTab() {
-  const { data, updateProfile, resetAllData, importData, toggleTheme } = useApp();
+  const { data, updateProfile, resetAllData, importData, exportData, toggleTheme } = useApp();
   const { profile, theme } = data;
 
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isAndroidModalOpen, setIsAndroidModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
-  const handleExportData = () => {
-    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
-      JSON.stringify(data, null, 2)
-    )}`;
+  const handleExportData = async () => {
+    const rawJson = exportData ? await exportData() : JSON.stringify(data, null, 2);
+    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(rawJson)}`;
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute('href', jsonString);
     downloadAnchor.setAttribute(
       'download',
-      `arc_winter_health_backup_${new Date().toISOString().slice(0, 10)}.json`
+      `arc_health_backup_${new Date().toISOString().slice(0, 10)}.json`
     );
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
