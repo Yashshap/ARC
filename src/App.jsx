@@ -1,5 +1,6 @@
 import React from 'react';
 import { AppProvider, useApp } from './context/AppContext';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import Header from './components/layout/Header';
 import Navbar from './components/layout/Navbar';
 import WaterTab from './components/tabs/WaterTab';
@@ -21,7 +22,9 @@ function MainLayout() {
   if (currentPage === 'settings') {
     return (
       <div id="app-viewport" className="app-viewport page-viewport-fullscreen">
-        <SettingsPage />
+        <ErrorBoundary name="Settings Page">
+          <SettingsPage />
+        </ErrorBoundary>
       </div>
     );
   }
@@ -30,7 +33,9 @@ function MainLayout() {
   if (currentPage === 'faq') {
     return (
       <div id="app-viewport" className="app-viewport page-viewport-fullscreen">
-        <FaqPage />
+        <ErrorBoundary name="Help & FAQ Page">
+          <FaqPage />
+        </ErrorBoundary>
       </div>
     );
   }
@@ -39,7 +44,9 @@ function MainLayout() {
   if (currentPage === 'privacy') {
     return (
       <div id="app-viewport" className="app-viewport page-viewport-fullscreen">
-        <PrivacyPage />
+        <ErrorBoundary name="Privacy Policy Page">
+          <PrivacyPage />
+        </ErrorBoundary>
       </div>
     );
   }
@@ -48,7 +55,9 @@ function MainLayout() {
   if (currentPage === 'profile') {
     return (
       <div id="app-viewport" className="app-viewport page-viewport-fullscreen">
-        <ProfilePage />
+        <ErrorBoundary name="Profile Page">
+          <ProfilePage />
+        </ErrorBoundary>
       </div>
     );
   }
@@ -58,12 +67,36 @@ function MainLayout() {
     <div id="app-viewport" className="app-viewport">
       <Header />
       <main className="app-content">
-        {activeTab === 'water' && <WaterTab />}
-        {activeTab === 'diet' && <DietTab />}
-        {activeTab === 'workout' && <WorkoutTab />}
-        {activeTab === 'care' && <CareAndPillsTab />}
-        {activeTab === 'analytics' && <AnalyticsTab />}
-        {activeTab === 'profile' && <ProfilePage />}
+        {activeTab === 'water' && (
+          <ErrorBoundary name="Water Tracker">
+            <WaterTab />
+          </ErrorBoundary>
+        )}
+        {activeTab === 'diet' && (
+          <ErrorBoundary name="Diet Tracker">
+            <DietTab />
+          </ErrorBoundary>
+        )}
+        {activeTab === 'workout' && (
+          <ErrorBoundary name="Workout Tracker">
+            <WorkoutTab />
+          </ErrorBoundary>
+        )}
+        {activeTab === 'care' && (
+          <ErrorBoundary name="Care & Pills">
+            <CareAndPillsTab />
+          </ErrorBoundary>
+        )}
+        {activeTab === 'analytics' && (
+          <ErrorBoundary name="Analytics">
+            <AnalyticsTab />
+          </ErrorBoundary>
+        )}
+        {activeTab === 'profile' && (
+          <ErrorBoundary name="Profile">
+            <ProfilePage />
+          </ErrorBoundary>
+        )}
       </main>
       <Navbar />
     </div>
@@ -72,8 +105,10 @@ function MainLayout() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <MainLayout />
-    </AppProvider>
+    <ErrorBoundary name="VitalSync App" showHomeAction>
+      <AppProvider>
+        <MainLayout />
+      </AppProvider>
+    </ErrorBoundary>
   );
 }

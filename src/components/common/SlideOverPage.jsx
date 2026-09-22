@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 /**
@@ -15,26 +15,29 @@ export default function SlideOverPage({
   zIndex = 500,
   className = '',
 }) {
+  const [prevIsOpen, setPrevIsOpen] = useState(Boolean(isOpen));
   const [shouldRender, setShouldRender] = useState(Boolean(isOpen));
-  const [isClosing, setIsClosing] = useState(false);
-  const wasOpenRef = useRef(Boolean(isOpen));
+
+  // Sync state during render when opening to avoid cascading effect renders
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+    if (isOpen) {
+      setShouldRender(true);
+    }
+  }
+
+  // Purely derived closing state: open became false while still rendered
+  const isClosing = !isOpen && shouldRender;
 
   useEffect(() => {
-    if (isOpen) {
-      wasOpenRef.current = true;
-      setShouldRender(true);
-      setIsClosing(false);
-    } else if (wasOpenRef.current) {
-      // Transition from open to closed -> trigger slide-out exit animation
-      wasOpenRef.current = false;
-      setIsClosing(true);
+    if (isClosing) {
+      // Transition from open to closed -> unmount after slide-out animation completes
       const timer = setTimeout(() => {
         setShouldRender(false);
-        setIsClosing(false);
       }, 240);
       return () => clearTimeout(timer);
     }
-  }, [isOpen]);
+  }, [isClosing]);
 
   if (!shouldRender) return null;
 

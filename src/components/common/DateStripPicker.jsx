@@ -81,14 +81,12 @@ export default function DateStripPicker({
   }, [centerMonth]);
 
   // Center on activeDate when activeDate changes significantly (more than 5 months away)
-  useEffect(() => {
-    const diffMonths =
-      (activeDate.getFullYear() - centerMonth.getFullYear()) * 12 +
-      (activeDate.getMonth() - centerMonth.getMonth());
-    if (Math.abs(diffMonths) > 5) {
-      setCenterMonth(new Date(activeDate));
-    }
-  }, [activeDate, centerMonth]);
+  const diffMonths =
+    (activeDate.getFullYear() - centerMonth.getFullYear()) * 12 +
+    (activeDate.getMonth() - centerMonth.getMonth());
+  if (Math.abs(diffMonths) > 5) {
+    setCenterMonth(new Date(activeDate));
+  }
 
   // Scroll active item into view on mount (align by Monday of active week so 7-day week is displayed)
   useEffect(() => {
@@ -125,7 +123,7 @@ export default function DateStripPicker({
     }, isInitialMount.current ? 70 : 0);
 
     return () => clearTimeout(timer);
-  }, [activeIso, daysList]);
+  }, [activeDate, activeIso, daysList]);
 
   // Scroll listener to update displayedMonth and trigger haptics dynamically as user scrolls
   const handleScroll = useCallback(() => {

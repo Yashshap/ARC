@@ -1158,3 +1158,5 @@ export const FOOD_DATABASE = [
     unit: 'g',
   },
 ];
+
+export const DEFAULT_FOOD_DATABASE = FOOD_DATABASE;
