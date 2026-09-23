@@ -1,8 +1,8 @@
 import Dexie from 'dexie';
 
 export class ArcDatabase extends Dexie {
-  constructor() {
-    super('ArcHealthDatabase');
+  constructor(dbName = 'ArcHealth_guest') {
+    super(dbName);
     this.version(1).stores({
       waterLogs: '++id, date, time',
       dailyMetrics: 'date',
@@ -20,4 +20,8 @@ export class ArcDatabase extends Dexie {
   }
 }
 
-export const db = new ArcDatabase();
+export let db = new ArcDatabase('ArcHealth_guest');
+
+export const setDatabaseInstance = (newDb) => {
+  db = newDb;
+};

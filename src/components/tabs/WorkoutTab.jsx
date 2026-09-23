@@ -57,52 +57,67 @@ export default function WorkoutTab() {
           </button>
         </div>
 
-        <div className="plans-grid">
-          {plans.map((plan) => (
-            <div key={plan.id} className="plan-card glass-card">
-              <div className="plan-card-header">
-                <div>
-                  <span className="plan-cat-tag">{plan.category}</span>
-                  <h4 className="plan-title">{plan.title}</h4>
-                  <span className="plan-meta">
-                    {plan.exercises?.length || 0} exercises • ~{plan.duration || 45} mins
-                  </span>
+        {plans.length === 0 ? (
+          <div className="empty-state-card glass-card" style={{ padding: '28px 20px', textAlign: 'center', borderRadius: '16px' }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginBottom: '14px' }}>
+              No workout plans created yet. Build your first custom routine!
+            </p>
+            <button
+              type="button"
+              className="btn btn-workout btn-sm"
+              onClick={() => handleOpenEditPlan(null)}
+            >
+              <Plus size={15} /> Create Custom Plan
+            </button>
+          </div>
+        ) : (
+          <div className="plans-grid">
+            {plans.map((plan) => (
+              <div key={plan.id} className="plan-card glass-card">
+                <div className="plan-card-header">
+                  <div>
+                    <span className="plan-cat-tag">{plan.category}</span>
+                    <h4 className="plan-title">{plan.title}</h4>
+                    <span className="plan-meta">
+                      {plan.exercises?.length || 0} exercises • ~{plan.duration || 45} mins
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn-icon"
+                    onClick={() => handleOpenEditPlan(plan)}
+                    title="Edit plan"
+                  >
+                    <Edit3 size={15} />
+                  </button>
                 </div>
 
+                {/* Exercise summary list */}
+                <div className="plan-exercises-preview">
+                  {plan.exercises?.slice(0, 3).map((ex, idx) => (
+                    <div key={idx} className="plan-ex-item">
+                      <span className="plan-ex-name">{ex.name}</span>
+                      <span className="plan-ex-sets">{ex.sets?.length || 3} sets</span>
+                    </div>
+                  ))}
+                  {plan.exercises?.length > 3 && (
+                    <span className="plan-ex-more">+{plan.exercises.length - 3} more exercises</span>
+                  )}
+                </div>
+
+                {/* Start Plan Button */}
                 <button
                   type="button"
-                  className="btn-icon"
-                  onClick={() => handleOpenEditPlan(plan)}
-                  title="Edit plan"
+                  className="btn btn-workout plan-start-btn"
+                  onClick={() => handleStartWorkout(plan)}
                 >
-                  <Edit3 size={15} />
+                  <Play size={16} /> Start Routine
                 </button>
               </div>
-
-              {/* Exercise summary list */}
-              <div className="plan-exercises-preview">
-                {plan.exercises?.slice(0, 3).map((ex, idx) => (
-                  <div key={idx} className="plan-ex-item">
-                    <span className="plan-ex-name">{ex.name}</span>
-                    <span className="plan-ex-sets">{ex.sets?.length || 3} sets</span>
-                  </div>
-                ))}
-                {plan.exercises?.length > 3 && (
-                  <span className="plan-ex-more">+{plan.exercises.length - 3} more exercises</span>
-                )}
-              </div>
-
-              {/* Start Plan Button */}
-              <button
-                type="button"
-                className="btn btn-workout plan-start-btn"
-                onClick={() => handleStartWorkout(plan)}
-              >
-                <Play size={16} /> Start Routine
-              </button>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ---------------- TODAY'S WORKOUT SESSIONS SUB-PAGE ---------------- */}

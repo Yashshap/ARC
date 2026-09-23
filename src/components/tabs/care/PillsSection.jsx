@@ -40,7 +40,21 @@ export default function PillsSection({
 
       {/* Pills List */}
       <div className="pills-list">
-        {pills.map((pill) => (
+        {pills.length === 0 ? (
+          <div className="empty-state-card glass-card" style={{ padding: '24px 16px', textAlign: 'center', borderRadius: '16px' }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', marginBottom: '12px' }}>
+              No medications or supplements added yet.
+            </p>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={onOpenAddPill}
+            >
+              <Plus size={14} /> Add Your First Pill
+            </button>
+          </div>
+        ) : (
+          pills.map((pill) => (
           <div
             key={pill.id}
             className={`pill-card-compact glass-card ${pill.taken ? 'pill-taken' : ''}`}
@@ -92,7 +106,7 @@ export default function PillsSection({
               </div>
             </div>
           </div>
-        ))}
+        )))}
       </div>
     </div>
   );

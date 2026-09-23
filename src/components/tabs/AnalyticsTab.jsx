@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import DateStripPicker from '../common/DateStripPicker';
-import { DEFAULT_SKINCARE_ANALYTICS_ITEMS } from '../../data/skincareAnalyticsData';
 import AnalyticsCareHeatmap from './analytics/AnalyticsCareHeatmap';
 import WaterAnalyticsChart from './analytics/WaterAnalyticsChart';
 import CalorieAnalyticsChart from './analytics/CalorieAnalyticsChart';
@@ -22,8 +21,8 @@ export default function AnalyticsTab() {
 
   const careItems =
     analyticsCareTab === 'supplements'
-      ? care.pills || []
-      : DEFAULT_SKINCARE_ANALYTICS_ITEMS;
+      ? (care.pills || [])
+      : [...(care.skinRoutineAM || []), ...(care.skinRoutinePM || [])];
 
   return (
     <div className="tab-content analytics-tab-content">

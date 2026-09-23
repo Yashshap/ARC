@@ -18,12 +18,6 @@ import {
   Volume2,
   Flame,
   AlertTriangle,
-  Crown,
-  CreditCard,
-  Receipt,
-  History,
-  ChevronDown,
-  Check,
   CheckCircle2
 } from 'lucide-react';
 
@@ -35,19 +29,14 @@ export default function SettingsPage() {
     openFaqPage,
     openPrivacyPage,
     toggleFapCounter,
-    switchSubscriptionPlan,
     toggleNotification,
     saveRating,
     logoutUser,
-    loginUser,
+    openAuthModal,
     deleteAccount
   } = useApp();
 
-  const { theme, notifications, userRating, auth, subscription } = data;
-
-  // Subscription Modal state
-  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
-  const [isPlanHistoryExpanded, setIsPlanHistoryExpanded] = useState(false);
+  const { theme, notifications, userRating, auth } = data;
 
   // Modals state
   const [isRateModalOpen, setIsRateModalOpen] = useState(false);
@@ -319,42 +308,7 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* ================= 4. SUBSCRIPTION & MEMBERSHIP ================= */}
-        <section className="settings-section">
-          <div className="settings-section-header">
-            <span className="settings-section-title">Subscription & Membership</span>
-          </div>
 
-          <div className="settings-card glass-card">
-            <button
-              className="settings-action-row subscription-action-row"
-              onClick={() => setIsSubscriptionModalOpen(true)}
-              aria-label="Manage Subscription"
-            >
-              <div className="settings-row-left">
-                <div className={`settings-icon-circle ${subscription?.plan === 'pro' ? 'icon-pro-gold' : 'icon-free-tier'}`}>
-                  <Crown size={20} />
-                </div>
-                <div className="settings-row-text">
-                  <div className="subscription-card-title-row">
-                    <span className="settings-row-label">Subscription</span>
-                    <span className={`plan-badge-pill ${subscription?.plan === 'pro' ? 'badge-pro-gradient' : 'badge-free-pill'}`}>
-                      {subscription?.plan === 'pro' ? 'PRO MEMBER' : 'FREE TIER'}
-                    </span>
-                  </div>
-                  <span className="settings-row-sub">
-                    {subscription?.plan === 'pro'
-                      ? `Active • ${subscription?.price || '$9.99/mo'} (Renews ${subscription?.renewalDate || 'Oct 15, 2026'})`
-                      : 'Free Plan • Tap to view payment & plan history'}
-                  </span>
-                </div>
-              </div>
-              <div className="settings-row-right">
-                <ChevronRight size={18} className="chevron-icon" />
-              </div>
-            </button>
-          </div>
-        </section>
 
         {/* ================= 5. ENGAGEMENT & INFORMATION ================= */}
         <section className="settings-section">
@@ -443,11 +397,17 @@ export default function SettingsPage() {
           </div>
 
           <div className="settings-card glass-card">
-            {/* Logout */}
+            {/* Logout / Switch Account */}
             <button
               className="settings-action-row"
-              onClick={() => setIsLogoutModalOpen(true)}
-              aria-label="Logout of account"
+              onClick={() => {
+                if (auth?.isLoggedIn) {
+                  setIsLogoutModalOpen(true);
+                } else {
+                  openAuthModal();
+                }
+              }}
+              aria-label={auth?.isLoggedIn ? 'Logout of account' : 'Sign in with Google SSO'}
             >
               <div className="settings-row-left">
                 <div className="settings-icon-circle icon-warning">
@@ -455,10 +415,10 @@ export default function SettingsPage() {
                 </div>
                 <div className="settings-row-text">
                   <span className="settings-row-label">
-                    {auth?.isLoggedIn ? 'Logout' : 'Log In / Switch Account'}
+                    {auth?.isLoggedIn ? 'Logout' : 'Sign In with Google SSO'}
                   </span>
                   <span className="settings-row-sub">
-                    {auth?.isLoggedIn ? `Signed in as ${auth.email}` : 'Sign in to access synchronized profile'}
+                    {auth?.isLoggedIn ? `Signed in as ${auth.email}` : 'Sign in to access your personal profile'}
                   </span>
                 </div>
               </div>
@@ -615,7 +575,7 @@ export default function SettingsPage() {
             <p className="modal-description">
               {auth?.isLoggedIn
                 ? 'Your local logs and routines will remain safely preserved on this device. You can log back in at any time.'
-                : 'Sign in to access your personal member profile.'}
+                : 'Sign in with Google SSO to access your personal member profile.'}
             </p>
 
             {auth?.isLoggedIn ? (
@@ -648,11 +608,11 @@ export default function SettingsPage() {
                   type="button"
                   className="btn btn-primary"
                   onClick={() => {
-                    loginUser();
                     setIsLogoutModalOpen(false);
+                    openAuthModal();
                   }}
                 >
-                  Sign In (Alex Rivera)
+                  Sign In with Google SSO
                 </button>
               </div>
             )}
@@ -707,201 +667,7 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* ================= SUBSCRIPTION MODAL SHEET ================= */}
-      {isSubscriptionModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsSubscriptionModalOpen(false)}>
-          <div className="modal-content modal-content-large subscription-modal-sheet" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-drag-pill" />
 
-            <div className="subscription-modal-header">
-              <div className={`brand-icon ${subscription?.plan === 'pro' ? 'icon-pro-badge-bg' : 'icon-free-badge-bg'}`}>
-                <Crown size={22} />
-              </div>
-              <div>
-                <h3 className="modal-title">Subscription & Billing</h3>
-                <span className="subscription-status-sub">
-                  Current Status:{' '}
-                  <strong className={subscription?.plan === 'pro' ? 'text-gold' : 'text-accent'}>
-                    {subscription?.plan === 'pro' ? 'Active Pro Membership' : 'Active Free Tier'}
-                  </strong>
-                </span>
-              </div>
-            </div>
-
-            <div className="subscription-scroll-body">
-              {/* CURRENT ACTIVE PLAN HERO CARD */}
-              <div className={`current-plan-card ${subscription?.plan === 'pro' ? 'plan-card-pro' : 'plan-card-free'}`}>
-                <div className="current-plan-top">
-                  <div className="current-plan-info">
-                    <span className="current-plan-tag">Current Plan</span>
-                    <h4 className="current-plan-name">
-                      {subscription?.plan === 'pro' ? 'VitalSync Pro' : 'VitalSync Free Tier'}
-                    </h4>
-                    <span className="current-plan-price">
-                      {subscription?.plan === 'pro' ? '$9.99 / month' : '$0.00 / forever'}
-                    </span>
-                  </div>
-                  <div className={`plan-status-pill ${subscription?.plan === 'pro' ? 'status-pill-pro' : 'status-pill-free'}`}>
-                    {subscription?.plan === 'pro' ? '★ PRO ACTIVE' : 'FREE TIER'}
-                  </div>
-                </div>
-
-                <div className="current-plan-meta">
-                  <div className="plan-meta-item">
-                    <span className="meta-label">Billing Cycle</span>
-                    <span className="meta-val">{subscription?.plan === 'pro' ? 'Monthly' : 'None'}</span>
-                  </div>
-                  <div className="plan-meta-item">
-                    <span className="meta-label">Renewal Date</span>
-                    <span className="meta-val">{subscription?.renewalDate || 'Oct 15, 2026'}</span>
-                  </div>
-                  <div className="plan-meta-item">
-                    <span className="meta-label">Payment Method</span>
-                    <span className="meta-val">{subscription?.plan === 'pro' ? 'Apple Pay (•••• 4242)' : 'None'}</span>
-                  </div>
-                </div>
-
-                {/* Plan Features Checklist */}
-                <div className="plan-perks-list">
-                  <span className="perks-title">Included in your plan:</span>
-                  {subscription?.plan === 'pro' ? (
-                    <ul className="perks-items">
-                      <li><Check size={14} className="text-success" /> Unlimited Custom Macro Recipes & Nutrition Breakdown</li>
-                      <li><Check size={14} className="text-success" /> Advanced TUT (Time Under Tension) Workout Engine</li>
-                      <li><Check size={14} className="text-success" /> Medication & Skincare Adherence Heatmaps</li>
-                      <li><Check size={14} className="text-success" /> Fap Counter Discipline Streak & Focus Tracking</li>
-                      <li><Check size={14} className="text-success" /> 100% Encrypted Local Storage with Zero Ads</li>
-                    </ul>
-                  ) : (
-                    <ul className="perks-items">
-                      <li><Check size={14} className="text-success" /> Daily Water Intake & Hydration Tracker</li>
-                      <li><Check size={14} className="text-success" /> Standard Workout Plan & Exercise Logging</li>
-                      <li><Check size={14} className="text-success" /> Basic Medication Reminders</li>
-                      <li className="perk-muted">✕ Advanced Macro Recipes (Pro feature)</li>
-                      <li className="perk-muted">✕ TUT Resistance Timer (Pro feature)</li>
-                    </ul>
-                  )}
-                </div>
-
-                {/* Interactive Plan Switcher Button */}
-                <div className="plan-switch-action">
-                  <button
-                    type="button"
-                    className={`btn btn-sm ${subscription?.plan === 'pro' ? 'btn-secondary' : 'btn-primary'}`}
-                    onClick={() => switchSubscriptionPlan(subscription?.plan === 'pro' ? 'free' : 'pro')}
-                  >
-                    {subscription?.plan === 'pro' ? 'Switch to Free Plan (Demo)' : 'Upgrade to Pro ($9.99/mo)'}
-                  </button>
-                </div>
-              </div>
-
-              {/* PAYMENT HISTORY SECTION */}
-              <div className="subscription-section-block">
-                <div className="section-block-header">
-                  <div className="section-title-with-icon">
-                    <Receipt size={18} className="text-accent" />
-                    <h4 className="section-block-title">Payment History</h4>
-                  </div>
-                  <span className="section-block-badge">
-                    {subscription?.paymentHistory?.length || 0} Invoices
-                  </span>
-                </div>
-
-                <div className="payment-history-list">
-                  {subscription?.paymentHistory && subscription.paymentHistory.length > 0 ? (
-                    subscription.paymentHistory.map((inv) => (
-                      <div key={inv.id} className="payment-history-item">
-                        <div className="payment-item-left">
-                          <div className="payment-item-icon">
-                            <CreditCard size={16} />
-                          </div>
-                          <div className="payment-item-details">
-                            <span className="payment-plan-name">{inv.plan || 'VitalSync Pro Monthly'}</span>
-                            <span className="payment-meta-sub">
-                              {inv.date} • {inv.id} • {inv.method}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="payment-item-right">
-                          <span className="payment-amount">{inv.amount}</span>
-                          <span className="payment-status-badge status-paid">{inv.status}</span>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="payment-empty-box">
-                      <p>No billing invoices found.</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* PLAN / SUBSCRIPTION HISTORY (COLLAPSABLE) */}
-              <div className="subscription-section-block plan-history-collapsible-block">
-                <button
-                  type="button"
-                  className="section-collapsible-trigger"
-                  onClick={() => setIsPlanHistoryExpanded(prev => !prev)}
-                  aria-expanded={isPlanHistoryExpanded}
-                >
-                  <div className="section-title-with-icon">
-                    <History size={18} className="text-gold" />
-                    <div className="collapsible-title-wrap">
-                      <h4 className="section-block-title">Subscription & Plan History</h4>
-                      <span className="collapsible-subtitle">
-                        {isPlanHistoryExpanded
-                          ? 'Tap to collapse'
-                          : `${subscription?.planHistory?.length || 3} recorded transitions • Tap to expand`}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="collapsible-chevron-wrap">
-                    <ChevronDown size={18} className={`collapsible-chevron ${isPlanHistoryExpanded ? 'rotate' : ''}`} />
-                  </div>
-                </button>
-
-                {isPlanHistoryExpanded && (
-                  <div className="plan-history-expanded-body">
-                    <div className="plan-history-timeline">
-                      {subscription?.planHistory?.map((item, idx) => (
-                        <div key={item.id || idx} className="timeline-node">
-                          <div className="timeline-bullet-wrap">
-                            <div className={`timeline-bullet ${item.status === 'Active' ? 'bullet-active' : 'bullet-done'}`} />
-                            {idx < subscription.planHistory.length - 1 && <div className="timeline-line" />}
-                          </div>
-                          <div className="timeline-content-card">
-                            <div className="timeline-row-head">
-                              <span className="timeline-plan-title">{item.planName}</span>
-                              <span className={`timeline-status-pill ${item.status === 'Active' ? 'pill-active' : 'pill-past'}`}>
-                                {item.status}
-                              </span>
-                            </div>
-                            <span className="timeline-period-text">{item.period}</span>
-                            <div className="timeline-footer-row">
-                              <span className="timeline-price">{item.price}</span>
-                              <span className="timeline-notes">{item.notes}</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="btn btn-primary btn-block"
-                onClick={() => setIsSubscriptionModalOpen(false)}
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   );

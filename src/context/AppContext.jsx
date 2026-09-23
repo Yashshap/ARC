@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { INITIAL_DATA } from '../data/initialData';
 import {
-  initDatabase,
   dbAddWaterLog,
   dbRemoveWaterLog,
   dbSetWaterTarget,
@@ -24,7 +23,11 @@ import {
   importDatabaseFromJson,
   resetDatabase,
   getTodayDateString,
+  triggerSnapshotUpdate,
+  switchUserDatabase,
+  purgeLegacyDatabases,
 } from '../services/dbService';
+import { signOutGoogle, getStoredAuthSession, handleGoogleOAuthCallback, loginWithGoogle } from '../services/authService';
 import {
   syncWaterWeeklyHistory,
   syncDietWeeklyHistory,
@@ -42,20 +45,84 @@ export function AppProvider({ children }) {
   const [currentPage, setCurrentPage] = useState('main'); // 'main' | 'profile' | 'settings' | 'faq' | 'privacy'
   const [previousTab, setPreviousTab] = useState('water');
   const [isFullScreenPage, setIsFullScreenPage] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  // Initialize Dexie IndexedDB on startup
+  // Initialize Dexie IndexedDB & process Google OAuth redirect on startup
   useEffect(() => {
     let isMounted = true;
-    initDatabase().then(loadedState => {
-      if (isMounted) {
-        setData(loadedState);
-        setIsDbReady(true);
+
+    async function initAppSession() {
+      // 1. Purge legacy mock databases if any exist
+      await purgeLegacyDatabases();
+
+      // 2. Check if user just redirected back from Google OAuth
+      const oauthUser = await handleGoogleOAuthCallback();
+      if (oauthUser) {
+        const userState = await switchUserDatabase(oauthUser.id);
+        const userProfile = userState.profile || {
+          name: oauthUser.name,
+          goal: 'Personal Health & Fitness',
+          age: null,
+          gender: null,
+          height: null,
+          weight: null,
+          targetWeight: null,
+          activityLevel: 'Active',
+          avatarUrl: oauthUser.avatarUrl,
+          email: oauthUser.email,
+        };
+        const userAuth = {
+          isLoggedIn: true,
+          user: oauthUser,
+          email: oauthUser.email,
+          joinedDate: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        };
+        await dbSaveAppStateKey('profile', userProfile);
+        await dbSaveAppStateKey('auth', userAuth);
+
+        if (isMounted) {
+          setData({
+            ...userState,
+            profile: userProfile,
+            auth: userAuth,
+          });
+          setIsDbReady(true);
+          setCurrentPage('profile');
+        }
+        return;
       }
-    });
+
+      // 3. Check for existing stored session
+      const storedSession = getStoredAuthSession();
+      if (storedSession?.id) {
+        const userState = await switchUserDatabase(storedSession.id);
+        if (isMounted) {
+          setData(userState);
+          setIsDbReady(true);
+        }
+      } else {
+        // Guest mode: clean empty state, zero DB writes
+        const guestState = await switchUserDatabase('guest');
+        if (isMounted) {
+          setData(guestState);
+          setIsDbReady(true);
+        }
+      }
+    }
+
+    initAppSession();
+
     return () => {
       isMounted = false;
     };
   }, []);
+
+  // Continuously schedule disk snapshot for Android Auto-Backup
+  useEffect(() => {
+    if (isDbReady) {
+      triggerSnapshotUpdate();
+    }
+  }, [data, isDbReady]);
 
   // Apply theme to document element
   useEffect(() => {
@@ -700,62 +767,87 @@ export function AppProvider({ children }) {
     });
   };
 
-  const logoutUser = () => {
-    setData(prev => {
-      const updatedAuth = { ...prev.auth, isLoggedIn: false };
-      dbSaveAppStateKey('auth', updatedAuth).catch(console.error);
-      return { ...prev, auth: updatedAuth };
-    });
-  };
+  /* ================= GOOGLE SSO & GUEST AUTH ACTIONS ================= */
+  const loginWithGoogleSSO = async (googleUser) => {
+    try {
+      // 1. Switch to user-isolated database
+      const userState = await switchUserDatabase(googleUser.id);
 
-  const loginUser = (email = 'alex.rivera@vitalsync.health') => {
-    setData(prev => {
-      const updatedAuth = {
-        isLoggedIn: true,
-        email,
-        joinedDate: prev.auth?.joinedDate || 'January 2026',
+      // 2. Build profile from Google user info or existing profile
+      const userProfile = userState.profile || {
+        name: googleUser.name || 'Google User',
+        goal: 'Health & Fitness Tracking',
+        age: null,
+        gender: null,
+        height: null,
+        weight: null,
+        targetWeight: null,
+        activityLevel: 'Active',
+        avatarUrl: googleUser.avatarUrl || null,
+        email: googleUser.email,
       };
-      dbSaveAppStateKey('auth', updatedAuth).catch(console.error);
-      return { ...prev, auth: updatedAuth };
-    });
-  };
 
-  const switchSubscriptionPlan = (targetPlan) => {
-    setData(prev => {
-      const currentPlan = prev.subscription?.plan || 'pro';
-      const newPlan = targetPlan || (currentPlan === 'pro' ? 'free' : 'pro');
-      const isPro = newPlan === 'pro';
-      const todayStr = new Date().toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
+      // 3. Build auth state
+      const userAuth = {
+        isLoggedIn: true,
+        user: googleUser,
+        email: googleUser.email,
+        joinedDate: userState.auth?.joinedDate || new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+      };
+
+      // 4. Save to user database
+      await dbSaveAppStateKey('profile', userProfile);
+      await dbSaveAppStateKey('auth', userAuth);
+
+      setData({
+        ...userState,
+        profile: userProfile,
+        auth: userAuth,
       });
 
-      const newHistoryItem = {
-        id: `ph-${Date.now()}`,
-        planName: isPro ? 'VitalSync Pro (Monthly)' : 'VitalSync Free Tier',
-        period: `${todayStr} – Present`,
-        price: isPro ? '$9.99/mo' : '$0.00',
-        status: 'Active',
-        notes: isPro ? 'Upgraded to Pro Membership' : 'Switched to Free Tier',
-      };
+      setIsAuthModalOpen(false);
+      setCurrentPage('profile');
+    } catch (err) {
+      console.error('Failed to log in with Google SSO:', err);
+      throw err;
+    }
+  };
 
-      const updatedSubscription = {
-        ...prev.subscription,
-        plan: newPlan,
-        price: isPro ? '$9.99/mo' : '$0.00',
-        renewalDate: isPro ? 'Oct 15, 2026' : 'None (Lifetime Free)',
-        status: 'active',
-        planHistory: [newHistoryItem, ...(prev.subscription?.planHistory || [])],
-      };
+  const triggerGoogleLogin = async () => {
+    try {
+      const user = await loginWithGoogle();
+      if (user) {
+        await loginWithGoogleSSO(user);
+      }
+    } catch (err) {
+      console.error('Failed to authenticate with Google:', err);
+      throw err;
+    }
+  };
 
-      dbSaveAppStateKey('subscription', updatedSubscription).catch(console.error);
-
-      return {
-        ...prev,
-        subscription: updatedSubscription,
-      };
+  const exploreAsGuest = async () => {
+    setIsAuthModalOpen(false);
+    // Switch to guest database if not already
+    const guestState = await switchUserDatabase('guest');
+    setData({
+      ...guestState,
+      profile: null,
+      auth: { isLoggedIn: false, user: null, email: null, joinedDate: null },
     });
+    setActiveTab('water');
+    setCurrentPage('main');
+  };
+
+  const logoutUser = async () => {
+    await signOutGoogle();
+    const guestState = await switchUserDatabase('guest');
+    setData({
+      ...guestState,
+      profile: null,
+      auth: { isLoggedIn: false, user: null, email: null, joinedDate: null },
+    });
+    setActiveTab('water');
+    setCurrentPage('main');
   };
 
   const toggleFapCounter = () => {
@@ -771,12 +863,18 @@ export function AppProvider({ children }) {
 
   const deleteAccount = async () => {
     await resetAllData();
+    await signOutGoogle();
     setCurrentPage('main');
     setActiveTab('water');
   };
 
   // Profile and Settings navigation helpers
   const openProfilePage = () => {
+    // If no profile is logged in, show Auth options
+    if (!data.auth?.isLoggedIn || !data.profile) {
+      setIsAuthModalOpen(true);
+      return;
+    }
     if (activeTab !== 'profile') {
       setPreviousTab(activeTab);
     }
@@ -848,15 +946,19 @@ export function AppProvider({ children }) {
         previousTab,
         // Habits & Features
         toggleFapCounter,
-        // Subscription
-        switchSubscriptionPlan,
         // Notifications
         toggleNotification,
         // Rating
         saveRating,
-        // Auth & Account
+        // Auth & Google SSO
+        isAuthModalOpen,
+        setIsAuthModalOpen,
+        openAuthModal: () => setIsAuthModalOpen(true),
+        closeAuthModal: () => setIsAuthModalOpen(false),
+        loginWithGoogleSSO,
+        triggerGoogleLogin,
+        exploreAsGuest,
         logoutUser,
-        loginUser,
         deleteAccount,
       }}
     >

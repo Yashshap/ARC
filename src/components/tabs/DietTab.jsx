@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { DEFAULT_FOOD_DATABASE } from '../../data/foodDatabase';
-import { DEFAULT_CUSTOM_MEALS } from '../../data/defaultCustomMeals';
 import SlideOverPage from '../common/SlideOverPage';
 import {
   Plus, Trash2, Coffee, Sun, Moon,
@@ -29,9 +28,7 @@ export default function DietTab() {
   const targetCalories = Number(dietData.targetCalories) || 2200;
   const targetMacros = dietData.targetMacros || { protein: 77, carbs: 250, fats: 44 };
   const meals = dietData.meals || { breakfast: [], lunch: [], dinner: [], snacks: [] };
-  const customMeals = Array.isArray(dietData.customMeals) && dietData.customMeals.length > 0
-    ? dietData.customMeals
-    : (DEFAULT_CUSTOM_MEALS || []);
+  const customMeals = Array.isArray(dietData.customMeals) ? dietData.customMeals : [];
   const foodDatabase = DEFAULT_FOOD_DATABASE || [];
 
   // Calculate totals of logged meals

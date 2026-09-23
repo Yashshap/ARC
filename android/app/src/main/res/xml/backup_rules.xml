@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Include app internal files directory (where snapshot JSON is saved) -->
+    <include domain="file" path="." />
+    <!-- Include database files (SQLite / LevelDB) -->
+    <include domain="database" path="." />
+    <!-- Include shared preferences -->
+    <include domain="sharedpref" path="." />
+</full-backup-content>

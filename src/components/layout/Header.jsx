@@ -28,19 +28,24 @@ export default function Header() {
       <div className="header-right">
         <div className="streak-badge" title="Consecutive days active">
           <Flame size={16} className="flame-icon" />
-          <span>{data.water.streak || 5}d Streak</span>
+          <span>{data.water?.streak || 0}d Streak</span>
         </div>
 
-        {/* Profile DP Button navigating to dedicated Profile Page */}
+        {/* Profile DP Button navigating to dedicated Profile Page or Auth Modal */}
         <button
           className={`header-profile-dp ${currentPage === 'profile' ? 'active' : ''}`}
           onClick={openProfilePage}
-          aria-label="Open Profile"
-          title="Open Profile"
+          aria-label={data.auth?.isLoggedIn ? 'Open Profile' : 'Sign in or explore as guest'}
+          title={data.auth?.isLoggedIn ? (data.profile?.name || 'Profile') : 'Sign In with Google'}
+          id="header-profile-btn"
         >
           <div className="header-avatar-circle">
-            {data.profile.avatarUrl ? (
-              <img src={data.profile.avatarUrl} alt="Avatar" className="header-avatar-img" />
+            {data.profile?.avatarUrl ? (
+              data.profile.avatarUrl.startsWith('http') || data.profile.avatarUrl.startsWith('data:') ? (
+                <img src={data.profile.avatarUrl} alt="Avatar" className="header-avatar-img" />
+              ) : (
+                <span className="header-avatar-emoji">{data.profile.avatarUrl}</span>
+              )
             ) : (
               <User size={16} className="header-avatar-icon" />
             )}

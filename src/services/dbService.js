@@ -1,8 +1,54 @@
-import { db } from '../db/arcDatabase';
+import Dexie from 'dexie';
+import { ArcDatabase, db, setDatabaseInstance } from '../db/arcDatabase';
 import { INITIAL_DATA } from '../data/initialData';
 import { FOOD_DATABASE } from '../data/foodDatabase';
+import { scheduleDiskSnapshot } from './snapshotService';
 
 const STORAGE_MIGRATION_KEY = 'vitalsync_health_app_data_v1';
+let currentUserId = null;
+
+/**
+ * Checks if the current session belongs to an authenticated user (not guest).
+ */
+export function isUserAuthenticated() {
+  return !!currentUserId && currentUserId !== 'guest';
+}
+
+/**
+ * Switches the active IndexedDB database instance.
+ * For guests ('guest' or null), no database writes are performed.
+ * For authenticated users, loads/initializes their private database.
+ *
+ * @param {string|null} userId
+ */
+export async function switchUserDatabase(userId) {
+  try {
+    if (db) {
+      try {
+        db.close();
+      } catch {
+        // Ignore close error
+      }
+    }
+
+    currentUserId = userId && userId !== 'guest' ? String(userId) : null;
+
+    if (!isUserAuthenticated()) {
+      // Guest mode: use clean empty in-memory state
+      return { ...INITIAL_DATA };
+    }
+
+    const sanitizedId = currentUserId.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const dbName = `ArcHealth_${sanitizedId}`;
+    const newDb = new ArcDatabase(dbName);
+    setDatabaseInstance(newDb);
+
+    return await initDatabase();
+  } catch (err) {
+    console.error('Failed to switch user database:', err);
+    return { ...INITIAL_DATA };
+  }
+}
 
 /**
  * Helper to get today's ISO date string: YYYY-MM-DD
@@ -12,100 +58,58 @@ export function getTodayDateString() {
 }
 
 /**
- * Initialize Dexie IndexedDB.
- * Migrates existing data from localStorage if available, or seeds fresh default data.
+ * Schedules an updated backup snapshot to disk (only for authenticated users).
+ */
+export async function triggerSnapshotUpdate() {
+  if (!isUserAuthenticated()) return;
+  try {
+    const jsonString = await exportDatabaseToJson();
+    scheduleDiskSnapshot(jsonString);
+  } catch (err) {
+    console.warn('Could not schedule snapshot update:', err);
+  }
+}
+
+/**
+ * Purges legacy mock databases and old localStorage keys to ensure zero fake data exists.
+ */
+export async function purgeLegacyDatabases() {
+  try {
+    localStorage.removeItem(STORAGE_MIGRATION_KEY);
+    localStorage.removeItem('arc_health_snapshot_disk_fallback');
+
+    try {
+      await Dexie.delete('ArcHealthDatabase');
+    } catch {
+      // Ignore
+    }
+    try {
+      await Dexie.delete('ArcHealth_guest');
+    } catch {
+      // Ignore
+    }
+  } catch (e) {
+    console.warn('Error purging legacy databases:', e);
+  }
+}
+
+/**
+ * Initialize Dexie IndexedDB for the current user.
+ * Guests do not store data in the database.
+ * Authenticated users receive a clean database with the reference food catalog.
+ *
  * Returns the assembled app state for AppContext.
  */
 export async function initDatabase() {
+  if (!isUserAuthenticated()) {
+    return { ...INITIAL_DATA };
+  }
+
   try {
     const isInitialized = await db.appState.get('initialized');
 
     if (!isInitialized) {
-      // Check for legacy localStorage data to migrate
-      const legacyRaw = localStorage.getItem(STORAGE_MIGRATION_KEY);
-      let legacyData = null;
-      if (legacyRaw) {
-        try {
-          legacyData = JSON.parse(legacyRaw);
-        } catch {
-          legacyData = null;
-        }
-      }
-
-      const seedSource = legacyData || INITIAL_DATA;
-
-      // 1. Seed Water Logs
-      if (seedSource.water?.logs?.length > 0) {
-        const today = getTodayDateString();
-        const waterEntries = seedSource.water.logs.map(log => ({
-          ...log,
-          date: log.date || today,
-        }));
-        await db.waterLogs.bulkPut(waterEntries);
-      }
-
-      // 2. Seed Meals
-      if (seedSource.diet?.meals) {
-        const today = getTodayDateString();
-        const mealEntries = [];
-        for (const [category, items] of Object.entries(seedSource.diet.meals)) {
-          if (Array.isArray(items)) {
-            items.forEach(item => {
-              mealEntries.push({
-                ...item,
-                category,
-                date: item.date || today,
-              });
-            });
-          }
-        }
-        if (mealEntries.length > 0) {
-          await db.meals.bulkPut(mealEntries);
-        }
-      }
-
-      // 3. Seed Custom Meals
-      if (seedSource.diet?.customMeals?.length > 0) {
-        await db.customMeals.bulkPut(seedSource.diet.customMeals);
-      }
-
-      // 4. Seed Workout Plans
-      if (seedSource.workout?.plans?.length > 0) {
-        await db.workoutPlans.bulkPut(seedSource.workout.plans);
-      }
-
-      // 5. Seed Workout Sessions
-      if (seedSource.workout?.todayWorkouts?.length > 0) {
-        const today = getTodayDateString();
-        const workoutEntries = seedSource.workout.todayWorkouts.map(w => ({
-          ...w,
-          date: w.date || today,
-        }));
-        await db.workoutSessions.bulkPut(workoutEntries);
-      }
-
-      // 6. Seed Pills
-      if (seedSource.care?.pills?.length > 0) {
-        await db.pills.bulkPut(seedSource.care.pills);
-      }
-
-      // 7. Seed Skincare Steps
-      const skincareEntries = [];
-      if (seedSource.care?.skinRoutineAM?.length > 0) {
-        seedSource.care.skinRoutineAM.forEach(step => {
-          skincareEntries.push({ ...step, routineType: 'AM' });
-        });
-      }
-      if (seedSource.care?.skinRoutinePM?.length > 0) {
-        seedSource.care.skinRoutinePM.forEach(step => {
-          skincareEntries.push({ ...step, routineType: 'PM' });
-        });
-      }
-      if (skincareEntries.length > 0) {
-        await db.skincareSteps.bulkPut(skincareEntries);
-      }
-
-      // 8. Seed Reference Food Database Catalog
+      // Seed Reference Food Database Catalog for meal logging searches
       const existingFoodCount = await db.foods.count();
       if (existingFoodCount === 0 && FOOD_DATABASE?.length > 0) {
         const foodCatalog = FOOD_DATABASE.map(f => ({
@@ -115,46 +119,48 @@ export async function initDatabase() {
         await db.foods.bulkPut(foodCatalog);
       }
 
-      // 9. Seed App State (profile, theme, settings, auth, etc.)
+      // Initialize clean user app state with zero dummy data
       const statePairs = [
         { key: 'initialized', value: true },
-        { key: 'theme', value: seedSource.theme || 'dark' },
-        { key: 'profile', value: seedSource.profile || INITIAL_DATA.profile },
-        { key: 'notifications', value: seedSource.notifications || INITIAL_DATA.notifications },
-        { key: 'subscription', value: seedSource.subscription || INITIAL_DATA.subscription },
-        { key: 'auth', value: seedSource.auth || INITIAL_DATA.auth },
-        { key: 'waterTarget', value: seedSource.water?.target || 2500 },
-        { key: 'waterStreak', value: seedSource.water?.streak || 6 },
-        { key: 'waterWeeklyHistory', value: seedSource.water?.weeklyHistory || INITIAL_DATA.water.weeklyHistory },
-        { key: 'dietTargetCalories', value: seedSource.diet?.targetCalories || 2250 },
-        { key: 'dietTargetMacros', value: seedSource.diet?.targetMacros || INITIAL_DATA.diet.targetMacros },
-        { key: 'dietWeeklyHistory', value: seedSource.diet?.weeklyHistory || INITIAL_DATA.diet.weeklyHistory },
-        { key: 'workoutStreak', value: seedSource.workout?.streak || 4 },
-        { key: 'workoutWeeklyGoal', value: seedSource.workout?.weeklyGoal || 5 },
-        { key: 'workoutWeeklyHistory', value: seedSource.workout?.weeklyHistory || INITIAL_DATA.workout.weeklyHistory },
-        { key: 'skinMood', value: seedSource.care?.skinMood || 'Glowing & Clear' },
-        { key: 'pillAnalytics', value: seedSource.care?.pillAnalytics || INITIAL_DATA.care.pillAnalytics },
-        { key: 'fapCounterEnabled', value: seedSource.fapCounterEnabled || false },
-        { key: 'userRating', value: seedSource.userRating || null },
+        { key: 'theme', value: 'dark' },
+        { key: 'profile', value: null },
+        { key: 'notifications', value: INITIAL_DATA.notifications },
+        { key: 'auth', value: INITIAL_DATA.auth },
+        { key: 'waterTarget', value: 2500 },
+        { key: 'waterStreak', value: 0 },
+        { key: 'waterWeeklyHistory', value: [] },
+        { key: 'dietTargetCalories', value: 2000 },
+        { key: 'dietTargetMacros', value: { protein: 120, carbs: 200, fats: 50 } },
+        { key: 'dietWeeklyHistory', value: [] },
+        { key: 'workoutStreak', value: 0 },
+        { key: 'workoutWeeklyGoal', value: 3 },
+        { key: 'workoutWeeklyHistory', value: [] },
+        { key: 'skinMood', value: 'Clear & Fresh' },
+        { key: 'pillAnalytics', value: null },
+        { key: 'fapCounterEnabled', value: false },
+        { key: 'userRating', value: null },
       ];
       await db.appState.bulkPut(statePairs);
     }
 
-    // Assemble current state from Dexie tables
     return await loadAssembledState();
   } catch (error) {
-    console.error('Failed to initialize IndexedDB, falling back to default:', error);
-    return INITIAL_DATA;
+    console.error('Failed to initialize user database, falling back to default:', error);
+    return { ...INITIAL_DATA };
   }
 }
 
 /**
- * Loads all records across Dexie tables and stitches them into the app state format.
+ * Queries Dexie and reconstructs full app state for the active authenticated user.
  */
-export async function loadAssembledState() {
+async function loadAssembledState() {
+  if (!isUserAuthenticated()) {
+    return { ...INITIAL_DATA };
+  }
+
   const [
     waterLogs,
-    allMeals,
+    meals,
     customMeals,
     workoutPlans,
     workoutSessions,
@@ -173,31 +179,25 @@ export async function loadAssembledState() {
   ]);
 
   const stateMap = {};
-  appStateEntries.forEach(entry => {
-    stateMap[entry.key] = entry.value;
-  });
+  for (const item of appStateEntries) {
+    stateMap[item.key] = item.value;
+  }
 
   // Calculate current water from today's logs
-  const todayWaterLogs = waterLogs.filter(
-    l => !l.date || l.date === getTodayDateString()
-  );
-  const currentWater = todayWaterLogs.reduce((acc, log) => acc + (log.amount || 0), 0);
+  const today = getTodayDateString();
+  const todayWaterLogs = waterLogs.filter(l => l.date === today);
+  const currentWater = todayWaterLogs.reduce((sum, l) => sum + (Number(l.amount) || 0), 0);
 
   // Group meals by category
-  const mealsByCategory = {
-    breakfast: [],
-    lunch: [],
-    dinner: [],
-    snacks: [],
-  };
-  allMeals.forEach(meal => {
-    const cat = meal.category || 'breakfast';
-    if (mealsByCategory[cat]) {
-      mealsByCategory[cat].push(meal);
-    }
-  });
+  const mealsByCategory = { breakfast: [], lunch: [], dinner: [], snacks: [] };
+  const todayMeals = meals.filter(m => m.date === today);
+  for (const meal of todayMeals) {
+    const cat = meal.category || 'snacks';
+    if (!mealsByCategory[cat]) mealsByCategory[cat] = [];
+    mealsByCategory[cat].push(meal);
+  }
 
-  // Group skincare by AM/PM
+  // Group skincare steps
   const skinRoutineAM = skincareSteps.filter(s => s.routineType === 'AM');
   const skinRoutinePM = skincareSteps.filter(s => s.routineType === 'PM');
 
@@ -205,76 +205,84 @@ export async function loadAssembledState() {
     theme: stateMap.theme || 'dark',
     water: {
       target: stateMap.waterTarget ?? 2500,
-      current: Math.max(0, currentWater),
-      streak: stateMap.waterStreak ?? 6,
-      logs: waterLogs,
-      weeklyHistory: stateMap.waterWeeklyHistory || INITIAL_DATA.water.weeklyHistory,
+      current: currentWater,
+      streak: stateMap.waterStreak ?? 0,
+      logs: todayWaterLogs,
+      weeklyHistory: stateMap.waterWeeklyHistory || [],
     },
     diet: {
-      targetCalories: stateMap.dietTargetCalories ?? 2250,
-      targetMacros: stateMap.dietTargetMacros || INITIAL_DATA.diet.targetMacros,
-      customMeals: customMeals.length > 0 ? customMeals : INITIAL_DATA.diet.customMeals,
+      targetCalories: stateMap.dietTargetCalories ?? 2000,
+      targetMacros: stateMap.dietTargetMacros || { protein: 120, carbs: 200, fats: 50 },
+      customMeals: customMeals || [],
       meals: mealsByCategory,
-      weeklyHistory: stateMap.dietWeeklyHistory || INITIAL_DATA.diet.weeklyHistory,
+      weeklyHistory: stateMap.dietWeeklyHistory || [],
     },
     workout: {
-      streak: stateMap.workoutStreak ?? 4,
-      weeklyGoal: stateMap.workoutWeeklyGoal ?? 5,
-      plans: workoutPlans.length > 0 ? workoutPlans : INITIAL_DATA.workout.plans,
-      todayWorkouts: workoutSessions,
-      weeklyHistory: stateMap.workoutWeeklyHistory || INITIAL_DATA.workout.weeklyHistory,
+      streak: stateMap.workoutStreak ?? 0,
+      weeklyGoal: stateMap.workoutWeeklyGoal ?? 3,
+      plans: workoutPlans || [],
+      todayWorkouts: workoutSessions || [],
+      weeklyHistory: stateMap.workoutWeeklyHistory || [],
     },
     care: {
-      skinMood: stateMap.skinMood || 'Glowing & Clear',
+      skinMood: stateMap.skinMood || 'Clear & Fresh',
       skinRoutineAM,
       skinRoutinePM,
-      pillAnalytics: stateMap.pillAnalytics || INITIAL_DATA.care.pillAnalytics,
-      pills,
+      pillAnalytics: stateMap.pillAnalytics || null,
+      pills: pills || [],
     },
-    profile: stateMap.profile || INITIAL_DATA.profile,
+    profile: stateMap.profile || null,
     notifications: stateMap.notifications || INITIAL_DATA.notifications,
     userRating: stateMap.userRating || null,
     fapCounterEnabled: stateMap.fapCounterEnabled || false,
-    subscription: stateMap.subscription || INITIAL_DATA.subscription,
     auth: stateMap.auth || INITIAL_DATA.auth,
   };
 }
 
 /* ================= WATER DB OPERATIONS ================= */
 export async function dbAddWaterLog(log) {
+  if (!isUserAuthenticated()) return null;
   return await db.waterLogs.add(log);
 }
 
 export async function dbRemoveWaterLog(id) {
+  if (!isUserAuthenticated()) return null;
   return await db.waterLogs.delete(id);
 }
 
 export async function dbSetWaterTarget(target) {
+  if (!isUserAuthenticated()) return null;
   return await db.appState.put({ key: 'waterTarget', value: target });
 }
 
 /* ================= DIET DB OPERATIONS ================= */
 export async function dbAddMeal(meal) {
+  if (!isUserAuthenticated()) return null;
   return await db.meals.put(meal);
 }
 
 export async function dbUpdateMeal(meal) {
+  if (!isUserAuthenticated()) return null;
   return await db.meals.put(meal);
 }
 
 export async function dbRemoveMeal(id) {
+  if (!isUserAuthenticated()) return null;
   return await db.meals.delete(id);
 }
 
 export async function dbSaveCustomMeal(customMeal) {
+  if (!isUserAuthenticated()) return null;
   return await db.customMeals.put(customMeal);
 }
 
 export async function dbDeleteCustomMeal(id) {
+  if (!isUserAuthenticated()) return null;
   return await db.customMeals.delete(id);
 }
 
 export async function dbUpdateDietTargets(calories, macros) {
+  if (!isUserAuthenticated()) return;
   await db.appState.bulkPut([
     { key: 'dietTargetCalories', value: calories },
     { key: 'dietTargetMacros', value: macros },
@@ -283,66 +291,145 @@ export async function dbUpdateDietTargets(calories, macros) {
 
 /* ================= WORKOUT DB OPERATIONS ================= */
 export async function dbSaveWorkoutPlan(plan) {
+  if (!isUserAuthenticated()) return null;
   return await db.workoutPlans.put(plan);
 }
 
 export async function dbDeleteWorkoutPlan(id) {
+  if (!isUserAuthenticated()) return null;
   return await db.workoutPlans.delete(id);
 }
 
 export async function dbAddWorkoutSession(session) {
+  if (!isUserAuthenticated()) return null;
   return await db.workoutSessions.put(session);
 }
 
 export async function dbRemoveWorkoutSession(id) {
+  if (!isUserAuthenticated()) return null;
   return await db.workoutSessions.delete(id);
 }
 
 /* ================= CARE DB OPERATIONS ================= */
 export async function dbSavePill(pill) {
+  if (!isUserAuthenticated()) return null;
   return await db.pills.put(pill);
 }
 
 export async function dbDeletePill(id) {
+  if (!isUserAuthenticated()) return null;
   return await db.pills.delete(id);
 }
 
 export async function dbSaveSkincareStep(step) {
+  if (!isUserAuthenticated()) return null;
   return await db.skincareSteps.put(step);
 }
 
 export async function dbDeleteSkincareStep(id) {
+  if (!isUserAuthenticated()) return null;
   return await db.skincareSteps.delete(id);
 }
 
-/* ================= APP STATE OPERATIONS ================= */
+/* ================= APP STATE (SETTINGS & PROFILE) ================= */
 export async function dbSaveAppStateKey(key, value) {
+  if (!isUserAuthenticated()) return null;
   return await db.appState.put({ key, value });
 }
 
-/* ================= BACKUP & EXPORT ================= */
-export async function exportDatabaseToJson() {
-  const assembled = await loadAssembledState();
+/* ================= FOOD REFERENCE CATALOG ================= */
+export async function dbGetAllFoods() {
+  if (!isUserAuthenticated()) {
+    return FOOD_DATABASE.map(f => ({ ...f, isCustom: false }));
+  }
   const allFoods = await db.foods.toArray();
-  return JSON.stringify(
-    {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      database: 'ArcHealthDatabase',
-      data: assembled,
-      customFoods: allFoods.filter(f => f.isCustom),
-    },
-    null,
-    2
-  );
+  if (allFoods.length === 0) {
+    const foodCatalog = FOOD_DATABASE.map(f => ({
+      ...f,
+      isCustom: false,
+    }));
+    await db.foods.bulkPut(foodCatalog);
+    return foodCatalog;
+  }
+  return allFoods;
 }
 
-export async function importDatabaseFromJson(jsonInput) {
-  try {
-    const payload = typeof jsonInput === 'string' ? JSON.parse(jsonInput) : jsonInput;
-    const dataToImport = payload.data || payload;
+export async function dbAddCustomFood(food) {
+  if (!isUserAuthenticated()) return null;
+  return await db.foods.put(food);
+}
 
-    // Clear existing tables
+export async function dbDeleteCustomFood(id) {
+  if (!isUserAuthenticated()) return null;
+  return await db.foods.delete(id);
+}
+
+/* ================= BACKUP & RESTORE ================= */
+export async function exportDatabaseToJson() {
+  if (!isUserAuthenticated()) {
+    return JSON.stringify(INITIAL_DATA, null, 2);
+  }
+
+  const [
+    waterLogs,
+    meals,
+    customMeals,
+    workoutPlans,
+    workoutSessions,
+    pills,
+    skincareSteps,
+    appState,
+  ] = await Promise.all([
+    db.waterLogs.toArray(),
+    db.meals.toArray(),
+    db.customMeals.toArray(),
+    db.workoutPlans.toArray(),
+    db.workoutSessions.toArray(),
+    db.pills.toArray(),
+    db.skincareSteps.toArray(),
+    db.appState.toArray(),
+  ]);
+
+  const backupData = {
+    exportedAt: new Date().toISOString(),
+    version: 2,
+    userId: currentUserId,
+    data: {
+      waterLogs,
+      meals,
+      customMeals,
+      workoutPlans,
+      workoutSessions,
+      pills,
+      skincareSteps,
+      appState,
+    },
+  };
+
+  return JSON.stringify(backupData, null, 2);
+}
+
+export async function resetDatabase() {
+  if (!isUserAuthenticated()) return;
+  await Promise.all([
+    db.waterLogs.clear(),
+    db.meals.clear(),
+    db.customMeals.clear(),
+    db.workoutPlans.clear(),
+    db.workoutSessions.clear(),
+    db.pills.clear(),
+    db.skincareSteps.clear(),
+    db.appState.clear(),
+  ]);
+  await initDatabase();
+}
+
+export async function importDatabaseFromJson(jsonContent) {
+  if (!isUserAuthenticated()) return false;
+  try {
+    const parsed = typeof jsonContent === 'string' ? JSON.parse(jsonContent) : jsonContent;
+    const dataObj = parsed.data || parsed;
+
     await Promise.all([
       db.waterLogs.clear(),
       db.meals.clear(),
@@ -354,28 +441,19 @@ export async function importDatabaseFromJson(jsonInput) {
       db.appState.clear(),
     ]);
 
-    // Mark as uninitialized so initDatabase seeds properly from this payload
-    localStorage.setItem(STORAGE_MIGRATION_KEY, JSON.stringify(dataToImport));
-    await db.appState.delete('initialized');
+    if (dataObj.waterLogs?.length) await db.waterLogs.bulkPut(dataObj.waterLogs);
+    if (dataObj.meals?.length) await db.meals.bulkPut(dataObj.meals);
+    if (dataObj.customMeals?.length) await db.customMeals.bulkPut(dataObj.customMeals);
+    if (dataObj.workoutPlans?.length) await db.workoutPlans.bulkPut(dataObj.workoutPlans);
+    if (dataObj.workoutSessions?.length) await db.workoutSessions.bulkPut(dataObj.workoutSessions);
+    if (dataObj.pills?.length) await db.pills.bulkPut(dataObj.pills);
+    if (dataObj.skincareSteps?.length) await db.skincareSteps.bulkPut(dataObj.skincareSteps);
+    if (dataObj.appState?.length) await db.appState.bulkPut(dataObj.appState);
 
-    return await initDatabase();
+    await db.appState.put({ key: 'initialized', value: true });
+    return true;
   } catch (error) {
     console.error('Failed to import database from JSON:', error);
     return false;
   }
-}
-
-export async function resetDatabase() {
-  await Promise.all([
-    db.waterLogs.clear(),
-    db.meals.clear(),
-    db.customMeals.clear(),
-    db.workoutPlans.clear(),
-    db.workoutSessions.clear(),
-    db.pills.clear(),
-    db.skincareSteps.clear(),
-    db.appState.clear(),
-  ]);
-  localStorage.removeItem(STORAGE_MIGRATION_KEY);
-  return await initDatabase();
 }

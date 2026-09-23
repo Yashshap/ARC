@@ -49,7 +49,12 @@ export default function RoutineCard({
       {isOpen && (
         <div className="routine-collapse-body">
           <div className="care-steps-list">
-            {steps.map((step, idx) => (
+            {steps.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', padding: '10px 4px', margin: 0 }}>
+                No steps added yet. Tap "+ Add Step" to add one.
+              </p>
+            ) : (
+              steps.map((step, idx) => (
               <div
                 key={step.id}
                 className={`care-step-item glass-card ${step.completed ? 'completed' : ''}`}
@@ -88,7 +93,7 @@ export default function RoutineCard({
                   </div>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </div>
       )}
