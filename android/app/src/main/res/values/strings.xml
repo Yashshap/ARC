@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">VitalSync</string>
     <string name="title_activity_main">VitalSync</string>
-    <string name="package_name">com.arc.vitalsync</string>
-    <string name="custom_url_scheme">com.arc.vitalsync</string>
+    <string name="package_name">com.vitalsync.health</string>
+    <string name="custom_url_scheme">com.vitalsync.health</string>
 </resources>
