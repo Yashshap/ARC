@@ -24,12 +24,27 @@ export default function DateStripPicker({
   variant = 'glass', // 'glass' | 'light'
   className = '',
 }) {
-  // Ensure selectedDate is a valid Date
+  const today = useMemo(() => {
+    const t = new Date();
+    t.setHours(0, 0, 0, 0);
+    return t;
+  }, []);
+
+  const todayIso = useMemo(() => {
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }, [today]);
+
+  // Ensure selectedDate is a valid Date and never in the future
   const activeDate = useMemo(() => {
-    if (!selectedDate) return new Date();
+    if (!selectedDate) return new Date(today);
     const d = new Date(selectedDate);
-    return isNaN(d.getTime()) ? new Date() : d;
-  }, [selectedDate]);
+    if (isNaN(d.getTime())) return new Date(today);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime() > today.getTime() ? new Date(today) : d;
+  }, [selectedDate, today]);
 
   const activeIso = useMemo(() => {
     const y = activeDate.getFullYear();
@@ -38,8 +53,17 @@ export default function DateStripPicker({
     return `${y}-${m}-${d}`;
   }, [activeDate]);
 
-  // Center month for generating surrounding months (-6 to +6)
-  const [centerMonth, setCenterMonth] = useState(() => new Date(activeDate));
+  // End of the current week (Sunday) so the 7-day strip layout remains balanced
+  const endOfWeekIso = useMemo(() => {
+    const dayOfWeek = today.getDay();
+    const diffToSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+    const sunday = new Date(today);
+    sunday.setDate(today.getDate() + diffToSunday);
+    const y = sunday.getFullYear();
+    const m = String(sunday.getMonth() + 1).padStart(2, '0');
+    const d = String(sunday.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }, [today]);
 
   // The displayed month label at the top (dynamically changes on scroll or selection)
   const [displayedMonth, setDisplayedMonth] = useState(() => {
@@ -51,15 +75,19 @@ export default function DateStripPicker({
   const lastHapticIsoRef = useRef(null);
   const isInitialMount = useRef(true);
 
-  // Generate days for 13 months (-6 to +6 around centerMonth)
+  // Generate days for past 12 months up to the end of the current week
   const daysList = useMemo(() => {
     const list = [];
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const cy = centerMonth.getFullYear();
-    const cm = centerMonth.getMonth();
+    const ty = today.getFullYear();
+    const tm = today.getMonth();
 
-    for (let offset = -6; offset <= 6; offset++) {
-      const monthDate = new Date(cy, cm + offset, 1);
+    // Check if the current week spans into the next month
+    const [eYear, eMonth] = endOfWeekIso.split('-').map(Number);
+    const maxOffset = (eYear - ty) * 12 + (eMonth - 1 - tm);
+
+    for (let offset = -12; offset <= maxOffset; offset++) {
+      const monthDate = new Date(ty, tm + offset, 1);
       const year = monthDate.getFullYear();
       const month = monthDate.getMonth();
       const monthYear = monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -68,25 +96,24 @@ export default function DateStripPicker({
       for (let day = 1; day <= daysInMonth; day++) {
         const d = new Date(year, month, day);
         const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+        // Never include any days beyond the end of the current week
+        if (iso > endOfWeekIso) continue;
+
+        const isFuture = iso > todayIso;
+
         list.push({
           date: d,
           dayNum: day,
           dayShort: dayNames[d.getDay()],
           isoString: iso,
           monthYear,
+          isFuture,
         });
       }
     }
     return list;
-  }, [centerMonth]);
-
-  // Center on activeDate when activeDate changes significantly (more than 5 months away)
-  const diffMonths =
-    (activeDate.getFullYear() - centerMonth.getFullYear()) * 12 +
-    (activeDate.getMonth() - centerMonth.getMonth());
-  if (Math.abs(diffMonths) > 5) {
-    setCenterMonth(new Date(activeDate));
-  }
+  }, [today, todayIso, endOfWeekIso]);
 
   // Scroll active item into view on mount (align by Monday of active week so 7-day week is displayed)
   useEffect(() => {
@@ -166,21 +193,20 @@ export default function DateStripPicker({
   }, []);
 
   const handleDateClick = (item) => {
+    if (item.isFuture || item.isoString > todayIso) return;
     triggerLightHaptic();
     onSelectDate?.(item.date, item.isoString);
     setDisplayedMonth(item.monthYear);
-    // Keep date in place - no need to move it to the first place when selected
   };
 
   const handleCalendarChange = (e) => {
-    triggerLightHaptic();
     const val = e.target.value;
-    if (!val) return;
+    if (!val || val > todayIso) return;
+    triggerLightHaptic();
     const [year, month, day] = val.split('-').map(Number);
     const newDate = new Date(year, month - 1, day);
+    if (newDate.getTime() > today.getTime()) return;
 
-    // Update center month if needed
-    setCenterMonth(new Date(newDate));
     onSelectDate?.(newDate, val);
     setDisplayedMonth(newDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }));
 
@@ -219,7 +245,7 @@ export default function DateStripPicker({
       </div>
 
       <div className="date-selector-main-row">
-        {/* Left section: Scrollable dates from 1 to last date of month, past/beyond month updates header */}
+        {/* Left section: Scrollable dates up to current week, future dates disabled */}
         <div
           ref={scrollContainerRef}
           className="date-selector-week-strip scrollable-date-strip"
@@ -227,19 +253,31 @@ export default function DateStripPicker({
         >
           {daysList.map((item) => {
             const isSelected = item.isoString === activeIso;
+            const isFuture = item.isFuture;
+
             return (
               <button
                 key={item.isoString}
                 type="button"
                 data-iso={item.isoString}
                 data-monthyear={item.monthYear}
-                className={`week-day-btn ${isSelected ? 'active' : ''}`}
+                disabled={isFuture}
+                className={`week-day-btn ${isSelected ? 'active' : ''} ${isFuture ? 'disabled future-date' : ''}`}
                 onClick={() => handleDateClick(item)}
-                title={item.date.toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  month: 'short',
-                  day: 'numeric',
-                })}
+                aria-disabled={isFuture}
+                title={
+                  isFuture
+                    ? `${item.date.toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        month: 'short',
+                        day: 'numeric',
+                      })} (Future date disabled)`
+                    : item.date.toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        month: 'short',
+                        day: 'numeric',
+                      })
+                }
               >
                 <span className="week-day-name">{item.dayShort}</span>
                 <span className="week-day-num">{item.dayNum}</span>
@@ -251,7 +289,7 @@ export default function DateStripPicker({
         {/* Divider */}
         <div className="date-selector-divider" />
 
-        {/* Rightmost: Calendar Option */}
+        {/* Rightmost: Calendar Option with max={todayIso} */}
         <div className="date-selector-calendar-col">
           <div className="calendar-btn-wrap" title="Select date from calendar">
             <button type="button" className="btn-calendar-picker" aria-label="Open Calendar">
@@ -261,6 +299,7 @@ export default function DateStripPicker({
               type="date"
               className="native-date-input-overlay"
               value={activeIso}
+              max={todayIso}
               onChange={handleCalendarChange}
               aria-label="Pick date"
             />

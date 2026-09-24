@@ -8,8 +8,9 @@ export const INITIAL_DATA = {
     weeklyHistory: [],
   },
   diet: {
-    targetCalories: 2000,
-    targetMacros: { protein: 120, carbs: 200, fats: 50 },
+    targetCalories: null,
+    targetMacros: null,
+    isCustomTarget: false,
     customMeals: [],
     meals: {
       breakfast: [],

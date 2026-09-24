@@ -1,24 +1,78 @@
 import React, { useState } from 'react';
-import { Flame, X, Check } from 'lucide-react';
+import { Flame, X, Check, RefreshCw, Sparkles } from 'lucide-react';
+import { calculateMacrosFromCalories } from '../../../utils/macroCalculations';
+import { calculateBmiNutritionTargets } from '../../../utils/healthCalculations';
 
 export default function EditGoalsModal({
   isOpen,
   onClose,
-  targetCalories = 2200,
-  targetMacros = { protein: 77, carbs: 250, fats: 44 },
+  targetCalories = null,
+  targetMacros = null,
+  profile = null,
   onSave,
 }) {
-  const [goalCal, setGoalCal] = useState(() => String(targetCalories || 2200));
-  const [goalP, setGoalP] = useState(() => String(targetMacros?.protein ?? 77));
-  const [goalC, setGoalC] = useState(() => String(targetMacros?.carbs ?? 250));
-  const [goalF, setGoalF] = useState(() => String(targetMacros?.fats ?? 44));
+  const bmiTargets = calculateBmiNutritionTargets(profile);
+  const initialCal = targetCalories != null
+    ? targetCalories
+    : (bmiTargets.targetCalories != null ? bmiTargets.targetCalories : 2000);
+
+  const initialMacros = targetMacros != null
+    ? targetMacros
+    : (bmiTargets.targetMacros?.protein != null
+        ? bmiTargets.targetMacros
+        : calculateMacrosFromCalories(initialCal));
+
+  const [goalCal, setGoalCal] = useState(() => String(initialCal));
+  const [goalP, setGoalP] = useState(() => String(initialMacros.protein));
+  const [goalC, setGoalC] = useState(() => String(initialMacros.carbs));
+  const [goalF, setGoalF] = useState(() => String(initialMacros.fats));
 
   if (!isOpen) return null;
 
+  const handleCalorieChange = (newCalVal) => {
+    setGoalCal(newCalVal);
+    const num = Number(newCalVal);
+    if (num > 0) {
+      const dynamicMacros = calculateMacrosFromCalories(num);
+      setGoalP(String(dynamicMacros.protein));
+      setGoalC(String(dynamicMacros.carbs));
+      setGoalF(String(dynamicMacros.fats));
+    }
+  };
+
+  const handleAdjustCalories = (delta) => {
+    const current = Number(goalCal) || 2000;
+    const nextVal = Math.max(500, current + delta);
+    handleCalorieChange(String(nextVal));
+  };
+
+  const handleAutoBalance = () => {
+    const num = Number(goalCal) || 2000;
+    const dynamicMacros = calculateMacrosFromCalories(num);
+    setGoalP(String(dynamicMacros.protein));
+    setGoalC(String(dynamicMacros.carbs));
+    setGoalF(String(dynamicMacros.fats));
+  };
+
+  const handleApplyBmiTargets = () => {
+    if (bmiTargets.hasMetrics && bmiTargets.targetCalories != null) {
+      setGoalCal(String(bmiTargets.targetCalories));
+      setGoalP(String(bmiTargets.targetMacros.protein));
+      setGoalC(String(bmiTargets.targetMacros.carbs));
+      setGoalF(String(bmiTargets.targetMacros.fats));
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    const cal = Number(goalCal) || 2000;
+    const dynamic = calculateMacrosFromCalories(cal);
+    const p = Number(goalP) || dynamic.protein;
+    const c = Number(goalC) || dynamic.carbs;
+    const f = Number(goalF) || dynamic.fats;
+
     if (onSave) {
-      onSave(Number(goalCal) || 2200, Number(goalP) || 0, Number(goalC) || 0, Number(goalF) || 0);
+      onSave(cal, p, c, f);
     }
     onClose();
   };
@@ -36,7 +90,11 @@ export default function EditGoalsModal({
             </div>
             <div>
               <h3 className="edit-goals-title">Edit Nutrition Targets</h3>
-              <p className="edit-goals-subtitle">Set your daily calorie & macro goals</p>
+              <p className="edit-goals-subtitle">
+                {bmiTargets.hasMetrics
+                  ? `BMI: ${bmiTargets.bmi} (${bmiTargets.bmiCategory})`
+                  : 'Set custom daily calorie & macro goals'}
+              </p>
             </div>
           </div>
           <button
@@ -61,11 +119,11 @@ export default function EditGoalsModal({
                 type="number"
                 className="edit-calorie-input"
                 value={goalCal}
-                onChange={(e) => setGoalCal(e.target.value)}
+                onChange={(e) => handleCalorieChange(e.target.value)}
                 required
                 min="500"
                 max="10000"
-                placeholder="2200"
+                placeholder={bmiTargets.hasMetrics ? String(bmiTargets.targetCalories) : '2000'}
               />
               <span className="edit-calorie-unit">kcal</span>
             </div>
@@ -73,22 +131,46 @@ export default function EditGoalsModal({
               <button
                 type="button"
                 className="quick-adjust-pill"
-                onClick={() => setGoalCal(String(Math.max(500, (Number(goalCal) || 2000) - 100)))}
+                onClick={() => handleAdjustCalories(-100)}
               >
                 -100 kcal
               </button>
               <button
                 type="button"
                 className="quick-adjust-pill"
-                onClick={() => setGoalCal(String((Number(goalCal) || 2000) + 100))}
+                onClick={() => handleAdjustCalories(100)}
               >
                 +100 kcal
               </button>
+              <button
+                type="button"
+                className="quick-adjust-pill pill-auto-balance"
+                onClick={handleAutoBalance}
+                title="Recalculate protein, carbs, and fats to match calorie target"
+              >
+                <RefreshCw size={11} style={{ marginRight: '3px' }} /> Auto-Balance
+              </button>
+              {bmiTargets.hasMetrics && (
+                <button
+                  type="button"
+                  className="quick-adjust-pill"
+                  style={{ color: 'var(--color-primary-light)' }}
+                  onClick={handleApplyBmiTargets}
+                  title={`Reset to BMI target (${bmiTargets.targetCalories} kcal)`}
+                >
+                  <Sparkles size={11} style={{ marginRight: '3px' }} /> Use BMI ({bmiTargets.targetCalories})
+                </button>
+              )}
             </div>
           </div>
 
           {/* Macros 3-Grid */}
-          <div className="edit-macros-section-title">Daily Macronutrients</div>
+          <div className="edit-macros-section-title">
+            <span>Daily Macronutrients</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>
+              Auto-adjusted to calorie goal
+            </span>
+          </div>
           <div className="edit-macros-3grid">
             {/* Protein */}
             <div className="edit-macro-card protein-card">
@@ -104,7 +186,7 @@ export default function EditGoalsModal({
                   onChange={(e) => setGoalP(e.target.value)}
                   required
                   min="0"
-                  placeholder="77"
+                  placeholder="125"
                 />
                 <span className="edit-macro-unit">g</span>
               </div>
@@ -150,7 +232,7 @@ export default function EditGoalsModal({
                   onChange={(e) => setGoalF(e.target.value)}
                   required
                   min="0"
-                  placeholder="44"
+                  placeholder="56"
                 />
                 <span className="edit-macro-unit">g</span>
               </div>

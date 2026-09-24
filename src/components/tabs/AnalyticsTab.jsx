@@ -9,7 +9,7 @@ import { getIsoDate, getWeekDays } from '../../utils/careAnalyticsUtils';
 
 export default function AnalyticsTab() {
   const { data } = useApp();
-  const { water, diet, care } = data;
+  const { water, diet, care, profile } = data;
 
   // Date Selector State (Default: Today)
   const [selectedDate, setSelectedDate] = useState(() => new Date());
@@ -93,7 +93,7 @@ export default function AnalyticsTab() {
       <WaterAnalyticsChart water={water} />
 
       {/* Caloric Intake Chart */}
-      <CalorieAnalyticsChart diet={diet} />
+      <CalorieAnalyticsChart diet={diet} profile={profile} />
 
       {/* Level 3 Drilldown Modal */}
       {selectedItemForModal && (

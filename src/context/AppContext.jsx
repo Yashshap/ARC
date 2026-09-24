@@ -32,6 +32,7 @@ import {
   syncWorkoutWeeklyHistory,
 } from '../utils/dateHistorySync';
 import { getIsoDate } from '../utils/careAnalyticsUtils';
+import { calculateMacrosFromCalories } from '../utils/macroCalculations';
 
 const AppContext = createContext();
 
@@ -371,17 +372,23 @@ export function AppProvider({ children }) {
   };
 
   const updateDietTargets = (calories, protein, carbs, fats) => {
-    const c = Number(calories);
-    const macros = { protein: Number(protein), carbs: Number(carbs), fats: Number(fats) };
+    const c = Number(calories) || 2000;
+    const dynamicMacros = calculateMacrosFromCalories(c);
+    const macros = {
+      protein: protein !== undefined && protein !== null && !isNaN(Number(protein)) ? Number(protein) : dynamicMacros.protein,
+      carbs: carbs !== undefined && carbs !== null && !isNaN(Number(carbs)) ? Number(carbs) : dynamicMacros.carbs,
+      fats: fats !== undefined && fats !== null && !isNaN(Number(fats)) ? Number(fats) : dynamicMacros.fats,
+    };
 
     setData(prev => {
-      dbUpdateDietTargets(c, macros).catch(console.error);
+      dbUpdateDietTargets(c, macros, true).catch(console.error);
       return {
         ...prev,
         diet: {
           ...prev.diet,
           targetCalories: c,
           targetMacros: macros,
+          isCustomTarget: true,
         },
       };
     });

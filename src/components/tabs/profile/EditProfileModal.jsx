@@ -17,13 +17,20 @@ export default function EditProfileModal({
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const parseNum = (val) => {
+      const trimmed = String(val ?? '').trim();
+      if (!trimmed) return null;
+      const n = Number(trimmed);
+      return !isNaN(n) && n > 0 ? n : null;
+    };
+
     onSave({
       name: name.trim() || profile.name,
       goal: goal.trim() || profile.goal,
-      age: Number(age) || profile.age,
-      height: Number(height) || profile.height,
-      weight: Number(weight) || profile.weight,
-      targetWeight: Number(targetWeight) || profile.targetWeight,
+      age: parseNum(age) ?? profile.age,
+      height: parseNum(height),
+      weight: parseNum(weight),
+      targetWeight: parseNum(targetWeight),
     });
     onClose();
   };

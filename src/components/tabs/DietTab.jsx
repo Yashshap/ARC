@@ -12,6 +12,8 @@ import FoodEditScreen from './diet/FoodEditScreen';
 import CustomMealBuilderScreen from './diet/CustomMealBuilderScreen';
 import TrackMealCategoryScreen from './diet/TrackMealCategoryScreen';
 import EditGoalsModal from './diet/EditGoalsModal';
+import { calculateMacrosFromCalories } from '../../utils/macroCalculations';
+import { calculateBmiNutritionTargets } from '../../utils/healthCalculations';
 
 export default function DietTab() {
   const {
@@ -25,8 +27,21 @@ export default function DietTab() {
   } = useApp();
 
   const dietData = data?.diet || {};
-  const targetCalories = Number(dietData.targetCalories) || 2200;
-  const targetMacros = dietData.targetMacros || { protein: 77, carbs: 250, fats: 44 };
+  const profile = data?.profile;
+
+  // Calculate BMI and default targets if profile metrics (height & weight) exist
+  const bmiTargets = calculateBmiNutritionTargets(profile);
+
+  // Determine active targets: custom targets take precedence, then BMI-based targets, else null
+  const isCustom = Boolean(dietData.isCustomTarget && dietData.targetCalories != null);
+  const targetCalories = isCustom
+    ? Number(dietData.targetCalories)
+    : bmiTargets.targetCalories;
+
+  const targetMacros = isCustom
+    ? (dietData.targetMacros || (targetCalories ? calculateMacrosFromCalories(targetCalories) : null))
+    : bmiTargets.targetMacros;
+
   const meals = dietData.meals || { breakfast: [], lunch: [], dinner: [], snacks: [] };
   const customMeals = Array.isArray(dietData.customMeals) ? dietData.customMeals : [];
   const foodDatabase = DEFAULT_FOOD_DATABASE || [];
@@ -43,7 +58,9 @@ export default function DietTab() {
   const totalProtein = allLoggedItems.reduce((acc, it) => acc + (it.protein || 0), 0);
   const totalCarbs = allLoggedItems.reduce((acc, it) => acc + (it.carbs || 0), 0);
   const totalFats = allLoggedItems.reduce((acc, it) => acc + (it.fats || 0), 0);
-  const remainingCalories = Math.max(0, Math.round(targetCalories - totalCalories));
+  const remainingCalories = targetCalories != null
+    ? Math.max(0, Math.round(targetCalories - totalCalories))
+    : null;
 
   // Sub-screen navigation states
   const [activeMealCategory, setActiveMealCategory] = useState(null); // 'breakfast', 'lunch', etc.
@@ -116,7 +133,9 @@ export default function DietTab() {
             </div>
             <div className="entry-card-stats-row">
               <span className="single-circle-current">{totalCalories.toLocaleString()}</span>
-              <span className="single-circle-target">/ {targetCalories.toLocaleString()} kcal</span>
+              <span className="single-circle-target">
+                / {targetCalories != null ? `${targetCalories.toLocaleString()} kcal` : '- kcal'}
+              </span>
             </div>
           </div>
         </div>
@@ -276,6 +295,7 @@ export default function DietTab() {
             toggleTheme={toggleTheme}
             targetCalories={targetCalories}
             targetMacros={targetMacros}
+            profile={profile}
             totalCalories={totalCalories}
             totalProtein={totalProtein}
             totalCarbs={totalCarbs}
@@ -322,11 +342,12 @@ export default function DietTab() {
 
       {/* Edit Goals Modal */}
       <EditGoalsModal
-        key={isEditGoalsOpen ? 'open' : 'closed'}
+        key={isEditGoalsOpen ? `${targetCalories}_open` : 'closed'}
         isOpen={isEditGoalsOpen}
         onClose={() => setIsEditGoalsOpen(false)}
         targetCalories={targetCalories}
         targetMacros={targetMacros}
+        profile={profile}
         onSave={(cal, p, c, f) => {
           updateDietTargets(cal, p, c, f);
           showNotification('Goals saved successfully! 🎯');

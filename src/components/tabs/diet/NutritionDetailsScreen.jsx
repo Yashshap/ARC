@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ArrowLeft, Moon, Sun, Edit3, Flame
 } from 'lucide-react';
+import { calculateMacrosFromCalories } from '../../../utils/macroCalculations';
+import { calculateBmiNutritionTargets } from '../../../utils/healthCalculations';
 import DateStripPicker from '../../common/DateStripPicker';
 
 const DEFAULT_MICRONUTRIENTS = [
@@ -10,8 +12,7 @@ const DEFAULT_MICRONUTRIENTS = [
     name: 'Dietary Fiber',
     category: 'Digestive Health',
     type: 'minerals',
-    current: 28,
-    target: 30,
+    current: 0,
     unit: 'g',
     icon: '🌿',
     benefit: 'Gut biome & satiety regulation',
@@ -21,8 +22,7 @@ const DEFAULT_MICRONUTRIENTS = [
     name: 'Vitamin D3',
     category: 'Bone & Immunity',
     type: 'vitamins',
-    current: 19,
-    target: 20,
+    current: 0,
     unit: 'µg',
     icon: '☀️',
     benefit: 'Calcium uptake & immune modulation',
@@ -32,8 +32,7 @@ const DEFAULT_MICRONUTRIENTS = [
     name: 'Vitamin C',
     category: 'Antioxidant Defense',
     type: 'vitamins',
-    current: 82,
-    target: 90,
+    current: 0,
     unit: 'mg',
     icon: '🍊',
     benefit: 'Cellular repair & collagen synthesis',
@@ -43,8 +42,7 @@ const DEFAULT_MICRONUTRIENTS = [
     name: 'Calcium',
     category: 'Bone Density',
     type: 'minerals',
-    current: 920,
-    target: 1000,
+    current: 0,
     unit: 'mg',
     icon: '🥛',
     benefit: 'Skeletal strength & muscle contraction',
@@ -54,8 +52,7 @@ const DEFAULT_MICRONUTRIENTS = [
     name: 'Iron',
     category: 'Cellular Oxygenation',
     type: 'minerals',
-    current: 15,
-    target: 18,
+    current: 0,
     unit: 'mg',
     icon: '🩸',
     benefit: 'Hemoglobin & vital stamina',
@@ -65,8 +62,7 @@ const DEFAULT_MICRONUTRIENTS = [
     name: 'Magnesium',
     category: 'Neuromuscular Repair',
     type: 'minerals',
-    current: 340,
-    target: 400,
+    current: 0,
     unit: 'mg',
     icon: '⚡',
     benefit: 'Sleep recovery & protein metabolism',
@@ -76,8 +72,7 @@ const DEFAULT_MICRONUTRIENTS = [
     name: 'Potassium',
     category: 'Electrolyte Balance',
     type: 'minerals',
-    current: 2900,
-    target: 3400,
+    current: 0,
     unit: 'mg',
     icon: '🍌',
     benefit: 'Blood pressure & cellular hydration',
@@ -87,8 +82,7 @@ const DEFAULT_MICRONUTRIENTS = [
     name: 'Zinc',
     category: 'Immune System',
     type: 'minerals',
-    current: 9.6,
-    target: 11,
+    current: 0,
     unit: 'mg',
     icon: '🛡️',
     benefit: 'Tissue regeneration & enzyme function',
@@ -98,8 +92,7 @@ const DEFAULT_MICRONUTRIENTS = [
     name: 'Vitamin B12',
     category: 'Energy Metabolism',
     type: 'vitamins',
-    current: 2.2,
-    target: 2.4,
+    current: 0,
     unit: 'µg',
     icon: '🧬',
     benefit: 'Red blood cell & DNA support',
@@ -110,17 +103,63 @@ export default function NutritionDetailsScreen({
   onClose,
   theme = 'dark',
   toggleTheme,
-  targetCalories = 2200,
-  targetMacros = { protein: 77, carbs: 250, fats: 44 },
+  targetCalories = null,
+  targetMacros = null,
+  profile = null,
   totalCalories = 0,
   totalProtein = 0,
   totalCarbs = 0,
   totalFats = 0,
-  remainingCalories = 0,
+  remainingCalories = null,
   onOpenEditGoals,
 }) {
-  const [selectedDetailsDate, setSelectedDetailsDate] = useState(() => new Date());
   const [microFilter, setMicroFilter] = useState('all'); // 'all' | 'vitamins' | 'minerals'
+  const [selectedDetailsDate, setSelectedDetailsDate] = useState(() => new Date());
+
+  // BMI-based targets and recommendations
+  const bmiResults = useMemo(() => calculateBmiNutritionTargets(profile), [profile]);
+
+  // Active targets: custom targets take precedence, else BMI targets, else null
+  const activeTargetCalories = targetCalories != null
+    ? Number(targetCalories)
+    : bmiResults.targetCalories;
+
+  const activeMacros = targetMacros != null
+    ? targetMacros
+    : (activeTargetCalories != null
+        ? (bmiResults.targetMacros || calculateMacrosFromCalories(activeTargetCalories))
+        : null);
+
+  // Dynamic micronutrient targets derived from BMI/calories, or null if no metrics & no calories
+  const dynamicMicros = useMemo(() => {
+    if (bmiResults.hasMetrics) {
+      return bmiResults.targetMicros;
+    }
+    if (activeTargetCalories != null && activeTargetCalories > 0) {
+      return {
+        fiber: Math.round((activeTargetCalories / 1000) * 14),
+        vit_d: 20,
+        vit_c: Math.round((activeTargetCalories / 2000) * 90),
+        calcium: 1000,
+        iron: 15,
+        magnesium: 350,
+        potassium: Math.round((activeTargetCalories / 2000) * 3400),
+        zinc: Number(((activeTargetCalories / 2000) * 11).toFixed(1)),
+        vit_b12: 2.4,
+      };
+    }
+    return {
+      fiber: null,
+      vit_d: null,
+      vit_c: null,
+      calcium: null,
+      iron: null,
+      magnesium: null,
+      potassium: null,
+      zinc: null,
+      vit_b12: null,
+    };
+  }, [bmiResults, activeTargetCalories]);
 
   return (
     <div className="diet-details-screen modern-details-theme">
@@ -171,8 +210,10 @@ export default function NutritionDetailsScreen({
           {/* Calorie Arc Card */}
           <div className="calorie-arc-card">
             <div className="arc-card-header">
-              <span className="arc-card-title">Today Calories🔥</span>
-              <span className="arc-card-target">{targetCalories.toLocaleString()} kcal</span>
+              <span className="arc-card-title">Daily Calories🔥</span>
+              <span className="arc-card-target">
+                {activeTargetCalories != null ? `${activeTargetCalories.toLocaleString()} kcal` : '- kcal'}
+              </span>
             </div>
 
             {/* Semicircular Arc Gauge */}
@@ -182,8 +223,10 @@ export default function NutritionDetailsScreen({
                 const arcCx = 140;
                 const arcCy = 120;
                 const totalArcLen = Math.PI * arcR;
-                const effectiveCalories = totalCalories === 0 ? (targetCalories - 1265) : totalCalories;
-                const ratio = Math.min(0.98, Math.max(0.04, effectiveCalories / Math.max(1, targetCalories)));
+                const hasTarget = activeTargetCalories != null && activeTargetCalories > 0;
+                const ratio = hasTarget
+                  ? Math.min(1, Math.max(0, totalCalories / activeTargetCalories))
+                  : 0;
                 const strokeOffset = totalArcLen * (1 - ratio);
 
                 const angleDeg = 180 - (ratio * 180);
@@ -228,16 +271,18 @@ export default function NutritionDetailsScreen({
                     />
 
                     {/* Knob at tip of progress arc */}
-                    <circle
-                      className="arc-knob-circle"
-                      cx={knobX}
-                      cy={knobY}
-                      r="8.5"
-                      fill={theme === 'light' ? '#ffffff' : '#1e293b'}
-                      stroke="#c8f53c"
-                      strokeWidth="3.5"
-                      filter="url(#knobDropShadow)"
-                    />
+                    {ratio > 0 && (
+                      <circle
+                        className="arc-knob-circle"
+                        cx={knobX}
+                        cy={knobY}
+                        r="8.5"
+                        fill={theme === 'light' ? '#ffffff' : '#1e293b'}
+                        stroke="#c8f53c"
+                        strokeWidth="3.5"
+                        filter="url(#knobDropShadow)"
+                      />
+                    )}
                   </svg>
                 );
               })()}
@@ -248,7 +293,7 @@ export default function NutritionDetailsScreen({
                 <span className="arc-remaining-label">Remaining</span>
                 <div className="arc-val-group">
                   <span className="arc-val-number">
-                    {Math.round(totalCalories === 0 ? 1265 : remainingCalories).toLocaleString()}
+                    {remainingCalories != null ? Math.round(remainingCalories).toLocaleString() : '-'}
                   </span>
                   <span className="arc-val-unit">kcal</span>
                 </div>
@@ -265,9 +310,11 @@ export default function NutritionDetailsScreen({
                 <div className="macro-stat-info">
                   <span className="macro-stat-name">Protein</span>
                   <div className="macro-stat-numbers">
-                    <span className="macro-stat-val">{Math.round(totalProtein === 0 ? 42 : totalProtein)}</span>
+                    <span className="macro-stat-val">{Math.round(totalProtein)}</span>
                     <span className="macro-stat-slash">/</span>
-                    <span className="macro-stat-target">{Math.round(targetMacros?.protein ?? 77)}g</span>
+                    <span className="macro-stat-target">
+                      {activeMacros?.protein != null ? `${Math.round(activeMacros.protein)}g` : '-'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -280,9 +327,11 @@ export default function NutritionDetailsScreen({
                 <div className="macro-stat-info">
                   <span className="macro-stat-name">Carb</span>
                   <div className="macro-stat-numbers">
-                    <span className="macro-stat-val">{Math.round(totalCarbs === 0 ? 80 : totalCarbs)}</span>
+                    <span className="macro-stat-val">{Math.round(totalCarbs)}</span>
                     <span className="macro-stat-slash">/</span>
-                    <span className="macro-stat-target">{Math.round(targetMacros?.carbs ?? 250)}g</span>
+                    <span className="macro-stat-target">
+                      {activeMacros?.carbs != null ? `${Math.round(activeMacros.carbs)}g` : '-'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -295,9 +344,11 @@ export default function NutritionDetailsScreen({
                 <div className="macro-stat-info">
                   <span className="macro-stat-name">Fat</span>
                   <div className="macro-stat-numbers">
-                    <span className="macro-stat-val">{Math.round(totalFats === 0 ? 35 : totalFats)}</span>
+                    <span className="macro-stat-val">{Math.round(totalFats)}</span>
                     <span className="macro-stat-slash">/</span>
-                    <span className="macro-stat-target">{Math.round(targetMacros?.fats ?? 44)}g</span>
+                    <span className="macro-stat-target">
+                      {activeMacros?.fats != null ? `${Math.round(activeMacros.fats)}g` : '-'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -309,7 +360,11 @@ export default function NutritionDetailsScreen({
             <div className="micro-section-header">
               <div className="micro-header-text-col">
                 <h3 className="micro-section-title">Micro Breakdown</h3>
-                <span className="micro-section-subtitle">Essential Micronutrients & Minerals</span>
+                <span className="micro-section-subtitle">
+                  {bmiResults.hasMetrics
+                    ? 'Personalized for your BMI & Physical Profile'
+                    : 'Essential Micronutrients & Minerals'}
+                </span>
               </div>
 
               <div className="micro-filter-pills">
@@ -330,7 +385,11 @@ export default function NutritionDetailsScreen({
               {DEFAULT_MICRONUTRIENTS
                 .filter(it => microFilter === 'all' || it.type === microFilter)
                 .map((item) => {
-                  const pct = Math.min(100, Math.round((item.current / item.target) * 100));
+                  const targetVal = dynamicMicros[item.id];
+                  const pct = targetVal != null && targetVal > 0
+                    ? Math.min(100, Math.round((item.current / targetVal) * 100))
+                    : 0;
+
                   return (
                     <div key={item.id} className="micro-nutrient-card">
                       <div className="micro-card-top">
@@ -348,7 +407,9 @@ export default function NutritionDetailsScreen({
                           <div className="micro-val-row">
                             <span className="micro-current-val">{Math.round(item.current)}</span>
                             <span className="micro-slash">/</span>
-                            <span className="micro-target-val">{Math.round(item.target)}{item.unit}</span>
+                            <span className="micro-target-val">
+                              {targetVal != null ? `${Math.round(targetVal)}${item.unit}` : '-'}
+                            </span>
                           </div>
                         </div>
                       </div>

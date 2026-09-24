@@ -129,8 +129,9 @@ export async function initDatabase() {
         { key: 'waterTarget', value: 2500 },
         { key: 'waterStreak', value: 0 },
         { key: 'waterWeeklyHistory', value: [] },
-        { key: 'dietTargetCalories', value: 2000 },
-        { key: 'dietTargetMacros', value: { protein: 120, carbs: 200, fats: 50 } },
+        { key: 'dietTargetCalories', value: null },
+        { key: 'dietTargetMacros', value: null },
+        { key: 'dietIsCustomTarget', value: false },
         { key: 'dietWeeklyHistory', value: [] },
         { key: 'workoutStreak', value: 0 },
         { key: 'workoutWeeklyGoal', value: 3 },
@@ -211,8 +212,9 @@ async function loadAssembledState() {
       weeklyHistory: stateMap.waterWeeklyHistory || [],
     },
     diet: {
-      targetCalories: stateMap.dietTargetCalories ?? 2000,
-      targetMacros: stateMap.dietTargetMacros || { protein: 120, carbs: 200, fats: 50 },
+      targetCalories: stateMap.dietTargetCalories ?? null,
+      targetMacros: stateMap.dietTargetMacros ?? null,
+      isCustomTarget: stateMap.dietIsCustomTarget ?? false,
       customMeals: customMeals || [],
       meals: mealsByCategory,
       weeklyHistory: stateMap.dietWeeklyHistory || [],
@@ -281,11 +283,12 @@ export async function dbDeleteCustomMeal(id) {
   return await db.customMeals.delete(id);
 }
 
-export async function dbUpdateDietTargets(calories, macros) {
+export async function dbUpdateDietTargets(calories, macros, isCustom = true) {
   if (!isUserAuthenticated()) return;
   await db.appState.bulkPut([
     { key: 'dietTargetCalories', value: calories },
     { key: 'dietTargetMacros', value: macros },
+    { key: 'dietIsCustomTarget', value: isCustom },
   ]);
 }
 

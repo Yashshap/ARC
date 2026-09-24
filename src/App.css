@@ -7637,6 +7637,20 @@
   background: var(--bg-card-subtle);
 }
 
+.week-day-btn:disabled,
+.week-day-btn.disabled,
+.week-day-btn.future-date {
+  opacity: 0.25 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.week-day-btn.future-date:hover {
+  background: transparent !important;
+}
+
 .week-day-btn.active {
   background: linear-gradient(135deg, var(--accent-primary), #6366f1);
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);

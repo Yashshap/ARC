@@ -1,14 +1,25 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { calculateBmiNutritionTargets } from '../../../utils/healthCalculations';
 
-export default function CalorieAnalyticsChart({ diet }) {
+export default function CalorieAnalyticsChart({ diet, profile }) {
+  const bmiTargets = useMemo(() => calculateBmiNutritionTargets(profile), [profile]);
+
   if (!diet || !diet.weeklyHistory) return null;
 
+  const isCustom = Boolean(diet.isCustomTarget && diet.targetCalories != null);
+  const targetCalories = isCustom
+    ? Number(diet.targetCalories)
+    : (bmiTargets.targetCalories ?? (diet.targetCalories != null ? Number(diet.targetCalories) : null));
+
+  const historyCalories = diet.weeklyHistory.map(h => h.calories || 0);
   const maxCalVal = Math.max(
-    ...diet.weeklyHistory.map(h => h.calories),
-    diet.targetCalories || 2500,
-    2500
+    ...historyCalories,
+    targetCalories || 0,
+    1000
   );
-  const targetY = 140 - ((diet.targetCalories || 2500) / maxCalVal) * 110;
+  const targetY = targetCalories != null
+    ? 140 - (targetCalories / maxCalVal) * 110
+    : null;
 
   return (
     <div className="section-block">
@@ -18,20 +29,24 @@ export default function CalorieAnalyticsChart({ diet }) {
       <div className="chart-card glass-card">
         <div className="chart-svg-wrap">
           <svg viewBox="0 0 320 160" className="analytics-svg">
-            {/* Target Line */}
-            <line
-              x1="20"
-              y1={targetY}
-              x2="300"
-              y2={targetY}
-              stroke="var(--color-diet-light)"
-              strokeDasharray="4 4"
-              strokeWidth="1.5"
-              opacity="0.6"
-            />
-            <text x="302" y={targetY + 4} fill="var(--text-muted)" fontSize="8">
-              {diet.targetCalories}
-            </text>
+            {/* Target Line if targetCalories exists */}
+            {targetCalories != null && targetY != null && (
+              <>
+                <line
+                  x1="20"
+                  y1={targetY}
+                  x2="300"
+                  y2={targetY}
+                  stroke="var(--color-diet-light)"
+                  strokeDasharray="4 4"
+                  strokeWidth="1.5"
+                  opacity="0.6"
+                />
+                <text x="302" y={targetY + 4} fill="var(--text-muted)" fontSize="8">
+                  {targetCalories}
+                </text>
+              </>
+            )}
 
             {/* Bars for each day */}
             {diet.weeklyHistory.map((item, idx) => {

@@ -1,5 +1,6 @@
 /**
- * Macro calculation utilities for scaling foods and meals based on weight (grams).
+ * Macro calculation utilities for scaling foods and meals based on weight (grams),
+ * and dynamically computing macronutrient distributions from calorie targets.
  */
 
 export const calculateItemMacros = (item, weight) => {
@@ -32,4 +33,21 @@ export const calculateMealTotal = (items) => {
     },
     { calories: 0, protein: 0, carbs: 0, fats: 0, totalWeight: 0 }
   );
+};
+
+/**
+ * Dynamically computes balanced macronutrient targets based on daily calorie target.
+ * Standard nutritional ratio:
+ * - Protein: 25% of calories (4 kcal/g) -> Math.round((calories * 0.25) / 4)
+ * - Carbs: 50% of calories (4 kcal/g) -> Math.round((calories * 0.50) / 4)
+ * - Fats: 25% of calories (9 kcal/g) -> Math.round((calories * 0.25) / 9)
+ * For 2000 kcal: 125g Protein, 250g Carbs, 56g Fats
+ */
+export const calculateMacrosFromCalories = (calories = 2000) => {
+  const c = Math.max(0, Number(calories) || 2000);
+  return {
+    protein: Math.round((c * 0.25) / 4),
+    carbs: Math.round((c * 0.50) / 4),
+    fats: Math.round((c * 0.25) / 9),
+  };
 };
