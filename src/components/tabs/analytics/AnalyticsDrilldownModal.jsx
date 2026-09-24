@@ -1,12 +1,19 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Info, X } from 'lucide-react';
+import { calculateItemStats, getIsoDate } from '../../../utils/careAnalyticsUtils';
 
 export default function AnalyticsDrilldownModal({
   item,
   category = 'supplements',
   onClose,
+  todayIso = getIsoDate(new Date()),
 }) {
-  if (!item) return null;
+  const stats = useMemo(() => {
+    if (!item) return null;
+    return calculateItemStats(item, todayIso);
+  }, [item, todayIso]);
+
+  if (!item || !stats) return null;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -43,7 +50,7 @@ export default function AnalyticsDrilldownModal({
           <div className="l3-stat-card">
             <span className="l3-stat-label">Days Completed</span>
             <span className="l3-stat-val text-success">
-              {item.totalTakenDays || 26} / {item.totalScheduledDays || 30}
+              {stats.totalTakenDays} / {stats.totalScheduledDays}
             </span>
             <span className="l3-stat-sub">days this month</span>
           </div>
@@ -51,7 +58,7 @@ export default function AnalyticsDrilldownModal({
           <div className="l3-stat-card">
             <span className="l3-stat-label">Adherence Rate</span>
             <span className="l3-stat-val text-accent">
-              {item.adherence || 87}%
+              {stats.adherence}%
             </span>
             <span className="l3-stat-sub">overall compliance</span>
           </div>
@@ -59,7 +66,7 @@ export default function AnalyticsDrilldownModal({
           <div className="l3-stat-card">
             <span className="l3-stat-label">Missed Days</span>
             <span className="l3-stat-val text-danger">
-              {item.missedDoses || 4}
+              {stats.missedDoses}
             </span>
             <span className="l3-stat-sub">missed doses</span>
           </div>
@@ -69,17 +76,17 @@ export default function AnalyticsDrilldownModal({
         <div className="level3-habit-section">
           <div className="section-header">
             <h4 className="level3-habit-title">30-Day Consistency Grid</h4>
-            <span className="level3-habit-sub">Day 1 to 30</span>
+            <span className="level3-habit-sub">Past 30 Days</span>
           </div>
 
           <div className="level3-habit-grid">
-            {(item.monthlyHistory || Array(30).fill(1)).map((st, idx) => (
+            {stats.monthlyHistory.map((st, idx) => (
               <div
                 key={idx}
                 className={`habit-dot ${
                   st === 1 ? 'dot-taken' : st === 0 ? 'dot-missed' : 'dot-pending'
                 }`}
-                title={`Day ${idx + 1}: ${
+                title={`Day -${29 - idx}: ${
                   st === 1 ? 'Completed' : st === 0 ? 'Missed' : 'Pending'
                 }`}
               >

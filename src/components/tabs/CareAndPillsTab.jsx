@@ -56,6 +56,10 @@ export default function CareAndPillsTab() {
     addPill(pillData);
   };
 
+  const amSteps = (data.care?.skinRoutineAM || []).filter(s => !s.deletedAt);
+  const pmSteps = (data.care?.skinRoutinePM || []).filter(s => !s.deletedAt);
+  const pills = (data.care?.pills || []).filter(p => !p.deletedAt);
+
   return (
     <div className="tab-container care-tab">
       {/* Top Segmented Control */}
@@ -76,15 +80,15 @@ export default function CareAndPillsTab() {
 
       {activeSegment === 'skincare' ? (
         <SkincareSection
-          amSteps={data.care.skinRoutineAM || []}
-          pmSteps={data.care.skinRoutinePM || []}
+          amSteps={amSteps}
+          pmSteps={pmSteps}
           onToggleStep={toggleSkinStep}
           onOpenDetail={setSheetItem}
           onOpenAddStep={handleOpenAddStep}
         />
       ) : (
         <PillsSection
-          pills={data.care.pills || []}
+          pills={pills}
           onTogglePill={togglePillTaken}
           onOpenDetail={setSheetItem}
           onOpenAddPill={() => setIsAddPillOpen(true)}

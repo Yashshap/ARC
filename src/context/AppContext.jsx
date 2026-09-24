@@ -15,9 +15,7 @@ import {
   dbAddWorkoutSession,
   dbRemoveWorkoutSession,
   dbSavePill,
-  dbDeletePill,
   dbSaveSkincareStep,
-  dbDeleteSkincareStep,
   dbSaveAppStateKey,
   exportDatabaseToJson,
   importDatabaseFromJson,
@@ -33,6 +31,7 @@ import {
   syncDietWeeklyHistory,
   syncWorkoutWeeklyHistory,
 } from '../utils/dateHistorySync';
+import { getIsoDate } from '../utils/careAnalyticsUtils';
 
 const AppContext = createContext();
 
@@ -485,19 +484,29 @@ export function AppProvider({ children }) {
   };
 
   /* ================= CARE & PILLS ACTIONS ================= */
-  const toggleSkinStep = (routineType, id) => {
+  const toggleSkinStep = (routineType, id, targetDate = new Date()) => {
+    const targetIso = getIsoDate(targetDate);
+    const todayIso = getIsoDate(new Date());
+    const isTargetToday = targetIso === todayIso;
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
     setData(prev => {
       const listKey = routineType === 'AM' ? 'skinRoutineAM' : 'skinRoutinePM';
       let modifiedStep = null;
-      const updatedList = prev.care[listKey].map(step => {
+      const updatedList = (prev.care[listKey] || []).map(step => {
         if (step.id === id) {
-          const nextState = !step.completed;
+          const currentHistory = step.history || {};
+          const currentStatus = !!currentHistory[targetIso];
+          const nextStatus = !currentStatus;
           modifiedStep = {
             ...step,
             routineType,
-            completed: nextState,
-            time: nextState ? timeStr : null,
+            history: {
+              ...currentHistory,
+              [targetIso]: nextStatus,
+            },
+            completed: isTargetToday ? nextStatus : step.completed,
+            time: isTargetToday ? (nextStatus ? timeStr : null) : step.time,
           };
           return modifiedStep;
         }
@@ -520,12 +529,16 @@ export function AppProvider({ children }) {
 
   const addSkinStep = (routineType, stepName) => {
     const listKey = routineType === 'AM' ? 'skinRoutineAM' : 'skinRoutinePM';
+    const todayIso = getIsoDate(new Date());
     const newStep = {
       id: 'step_' + Date.now(),
       routineType,
       step: stepName,
       completed: false,
       time: null,
+      createdAt: todayIso,
+      deletedAt: null,
+      history: {},
     };
 
     setData(prev => {
@@ -534,21 +547,35 @@ export function AppProvider({ children }) {
         ...prev,
         care: {
           ...prev.care,
-          [listKey]: [...prev.care[listKey], newStep],
+          [listKey]: [...(prev.care[listKey] || []), newStep],
         },
       };
     });
   };
 
   const removeSkinStep = (routineType, id) => {
+    const listKey = routineType === 'AM' ? 'skinRoutineAM' : 'skinRoutinePM';
+    const todayIso = getIsoDate(new Date());
+
     setData(prev => {
-      const listKey = routineType === 'AM' ? 'skinRoutineAM' : 'skinRoutinePM';
-      dbDeleteSkincareStep(id).catch(console.error);
+      let modifiedStep = null;
+      const updatedList = (prev.care[listKey] || []).map(step => {
+        if (step.id === id) {
+          modifiedStep = { ...step, deletedAt: todayIso };
+          return modifiedStep;
+        }
+        return step;
+      });
+
+      if (modifiedStep) {
+        dbSaveSkincareStep(modifiedStep).catch(console.error);
+      }
+
       return {
         ...prev,
         care: {
           ...prev.care,
-          [listKey]: prev.care[listKey].filter(step => step.id !== id),
+          [listKey]: updatedList,
         },
       };
     });
@@ -558,7 +585,7 @@ export function AppProvider({ children }) {
     setData(prev => {
       const listKey = routineType === 'AM' ? 'skinRoutineAM' : 'skinRoutinePM';
       let updatedStep = null;
-      const updatedList = prev.care[listKey].map(step => {
+      const updatedList = (prev.care[listKey] || []).map(step => {
         if (step.id === id) {
           updatedStep = { ...step, routineType, step: newStepName };
           return updatedStep;
@@ -593,17 +620,21 @@ export function AppProvider({ children }) {
     });
   };
 
-  const togglePillTaken = (id) => {
+  const togglePillTaken = (id, targetDate = new Date()) => {
+    const targetIso = getIsoDate(targetDate);
+    const todayIso = getIsoDate(new Date());
+    const isTargetToday = targetIso === todayIso;
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
     setData(prev => {
       let updatedPill = null;
-      const updatedPills = prev.care.pills.map(p => {
+      const updatedPills = (prev.care.pills || []).map(p => {
         if (p.id === id) {
-          const nextTaken = !p.taken;
-          const heatmap = [...(p.heatmapHistory || [1, 1, 1, 1, 1, 1, 0])];
-          heatmap[heatmap.length - 1] = nextTaken ? 1 : 0;
+          const currentHistory = p.history || {};
+          const currentStatus = !!currentHistory[targetIso];
+          const nextStatus = !currentStatus;
 
-          const totalTaken = nextTaken
+          const totalTaken = nextStatus
             ? (p.totalTakenDays || 25) + 1
             : Math.max(0, (p.totalTakenDays || 26) - 1);
           const totalScheduled = p.totalScheduledDays || 30;
@@ -611,11 +642,14 @@ export function AppProvider({ children }) {
 
           updatedPill = {
             ...p,
-            taken: nextTaken,
-            takenAt: nextTaken ? timeStr : null,
+            history: {
+              ...currentHistory,
+              [targetIso]: nextStatus,
+            },
+            taken: isTargetToday ? nextStatus : p.taken,
+            takenAt: isTargetToday ? (nextStatus ? timeStr : null) : p.takenAt,
             totalTakenDays: totalTaken,
             adherence,
-            heatmapHistory: heatmap,
           };
           return updatedPill;
         }
@@ -637,6 +671,7 @@ export function AppProvider({ children }) {
   };
 
   const addPill = (pill) => {
+    const todayIso = getIsoDate(new Date());
     const newPill = {
       id: 'pill_' + Date.now(),
       name: pill.name,
@@ -651,8 +686,9 @@ export function AppProvider({ children }) {
       adherence: 0,
       missedDoses: 0,
       instructions: pill.instructions || '',
-      heatmapHistory: [0, 0, 0, 0, 0, 0, 0],
-      monthlyHistory: Array(30).fill(0),
+      createdAt: todayIso,
+      deletedAt: null,
+      history: {},
     };
 
     setData(prev => {
@@ -661,7 +697,7 @@ export function AppProvider({ children }) {
         ...prev,
         care: {
           ...prev.care,
-          pills: [...prev.care.pills, newPill],
+          pills: [...(prev.care.pills || []), newPill],
         },
       };
     });
@@ -670,7 +706,7 @@ export function AppProvider({ children }) {
   const updatePill = (id, updatedFields) => {
     setData(prev => {
       let updatedPill = null;
-      const updatedPills = prev.care.pills.map(p => {
+      const updatedPills = (prev.care.pills || []).map(p => {
         if (p.id === id) {
           updatedPill = { ...p, ...updatedFields };
           return updatedPill;
@@ -693,13 +729,26 @@ export function AppProvider({ children }) {
   };
 
   const removePill = (id) => {
+    const todayIso = getIsoDate(new Date());
     setData(prev => {
-      dbDeletePill(id).catch(console.error);
+      let updatedPill = null;
+      const updatedPills = (prev.care.pills || []).map(p => {
+        if (p.id === id) {
+          updatedPill = { ...p, deletedAt: todayIso };
+          return updatedPill;
+        }
+        return p;
+      });
+
+      if (updatedPill) {
+        dbSavePill(updatedPill).catch(console.error);
+      }
+
       return {
         ...prev,
         care: {
           ...prev.care,
-          pills: prev.care.pills.filter(p => p.id !== id),
+          pills: updatedPills,
         },
       };
     });
