@@ -764,7 +764,19 @@ export function AppProvider({ children }) {
   /* ================= PROFILE ACTIONS ================= */
   const updateProfile = (profileUpdate) => {
     setData(prev => {
-      const updated = { ...prev.profile, ...profileUpdate };
+      const currentProfile = prev.profile || {
+        name: '',
+        goal: 'Health & Fitness Tracking',
+        age: null,
+        gender: null,
+        height: null,
+        weight: null,
+        targetWeight: null,
+        activityLevel: 'Active',
+        avatarUrl: null,
+        email: prev.auth?.email || null,
+      };
+      const updated = { ...currentProfile, ...profileUpdate };
       dbSaveAppStateKey('profile', updated).catch(console.error);
       return {
         ...prev,
@@ -829,18 +841,33 @@ export function AppProvider({ children }) {
       // 1. Switch to user-isolated database
       const userState = await switchUserDatabase(googleUser.id);
 
-      // 2. Build profile from Google user info or existing profile
-      const userProfile = userState.profile || {
-        name: googleUser.name || 'Google User',
-        goal: 'Health & Fitness Tracking',
+      let pendingOnboarding = null;
+      try {
+        const rawPending = window.localStorage.getItem("vitalsync_pending_onboarding_profile");
+        if (rawPending) pendingOnboarding = JSON.parse(rawPending);
+      } catch {}
+
+      // 2. Build profile from Google user info, pending onboarding data, or existing profile
+      const baseProfile = userState.profile || {
+        name: googleUser.name || "Google User",
+        goal: "Health & Fitness Tracking",
         age: null,
         gender: null,
         height: null,
         weight: null,
         targetWeight: null,
-        activityLevel: 'Active',
+        activityLevel: "Active",
         avatarUrl: googleUser.avatarUrl || null,
         email: googleUser.email,
+      };
+      const userProfile = {
+        ...baseProfile,
+        name: pendingOnboarding?.name || baseProfile.name || googleUser.name || "Google User",
+        gender: pendingOnboarding?.gender ?? baseProfile.gender ?? null,
+        height: pendingOnboarding?.height ?? baseProfile.height ?? null,
+        weight: pendingOnboarding?.weight ?? baseProfile.weight ?? null,
+        avatarUrl: googleUser.avatarUrl || baseProfile.avatarUrl || null,
+        email: googleUser.email || baseProfile.email || null,
       };
 
       // 3. Build auth state
@@ -862,7 +889,7 @@ export function AppProvider({ children }) {
       });
 
       setIsAuthModalOpen(false);
-      setCurrentPage('profile');
+      setCurrentPage('main');
     } catch (err) {
       console.error('Failed to log in with Google SSO:', err);
       throw err;

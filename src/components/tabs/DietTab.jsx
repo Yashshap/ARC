@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { DEFAULT_FOOD_DATABASE } from '../../data/foodDatabase';
+import { DEFAULT_CUSTOM_MEALS } from '../../data/defaultCustomMeals';
 import SlideOverPage from '../common/SlideOverPage';
 import {
   Plus, Trash2, Coffee, Sun, Moon,
@@ -43,7 +44,7 @@ export default function DietTab() {
     : bmiTargets.targetMacros;
 
   const meals = dietData.meals || { breakfast: [], lunch: [], dinner: [], snacks: [] };
-  const customMeals = Array.isArray(dietData.customMeals) ? dietData.customMeals : [];
+  const customMeals = (Array.isArray(dietData.customMeals) && dietData.customMeals.length > 0) ? dietData.customMeals : DEFAULT_CUSTOM_MEALS;
   const foodDatabase = DEFAULT_FOOD_DATABASE || [];
 
   // Calculate totals of logged meals
@@ -145,8 +146,16 @@ export default function DietTab() {
       </div>
 
       {/* Meals Section Header */}
-      <div className="meals-section-header">
+      <div className="meals-section-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
         <h3 className="section-title">Today's Meals</h3>
+        <button
+          type="button"
+          className="btn btn-diet btn-sm"
+          onClick={() => setIsCreateMealOpen(true)}
+          style={{ padding: "8px 14px", borderRadius: "12px", fontSize: "0.82rem", fontWeight: 700 }}
+        >
+          <Plus size={15} /> Custom Meal
+        </button>
       </div>
 
       {/* Global Backdrop for 3-dots dropdown */}

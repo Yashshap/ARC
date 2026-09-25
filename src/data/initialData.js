@@ -1,3 +1,5 @@
+import { DEFAULT_CUSTOM_MEALS } from "./defaultCustomMeals";
+
 export const INITIAL_DATA = {
   theme: 'dark',
   water: {
@@ -11,7 +13,7 @@ export const INITIAL_DATA = {
     targetCalories: null,
     targetMacros: null,
     isCustomTarget: false,
-    customMeals: [],
+    customMeals: DEFAULT_CUSTOM_MEALS,
     meals: {
       breakfast: [],
       lunch: [],

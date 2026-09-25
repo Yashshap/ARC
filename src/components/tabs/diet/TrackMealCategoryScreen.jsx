@@ -162,7 +162,7 @@ export default function TrackMealCategoryScreen({
       {/* Scrollable Content */}
       <div className="track-meal-scroll-body">
         {/* Section 1: My Meals */}
-        {filteredCustomMeals.length > 0 && (
+        {(
           <div className="track-meal-section">
             <div className="track-section-header">
               <span className="track-section-title">My Meals</span>
@@ -218,6 +218,15 @@ export default function TrackMealCategoryScreen({
                   </div>
                 );
               })}
+              {filteredCustomMeals.length === 0 && (
+                <div
+                  className="meal-empty-note"
+                  style={{ cursor: "pointer", padding: "12px 14px" }}
+                  onClick={onOpenCreateMeal}
+                >
+                  No custom meals saved yet — tap <strong>+ Custom Meal</strong> to create one.
+                </div>
+              )}
             </div>
           </div>
         )}
