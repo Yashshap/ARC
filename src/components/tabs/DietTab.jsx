@@ -152,9 +152,18 @@ export default function DietTab() {
           type="button"
           className="btn btn-diet btn-sm"
           onClick={() => setIsCreateMealOpen(true)}
-          style={{ padding: "8px 14px", borderRadius: "12px", fontSize: "0.82rem", fontWeight: 700 }}
+          style={{
+            background: "linear-gradient(135deg, #84cc16, #65a30d)",
+            color: "#0f172a",
+            fontWeight: 800,
+            padding: "8px 14px",
+            borderRadius: "12px",
+            fontSize: "0.82rem",
+            boxShadow: "0 3px 12px rgba(132, 204, 22, 0.35)",
+            border: "none"
+          }}
         >
-          <Plus size={15} /> Custom Meal
+          <Plus size={15} strokeWidth={2.4} /> Custom Meal
         </button>
       </div>
 

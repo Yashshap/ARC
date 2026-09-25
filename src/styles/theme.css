@@ -24,9 +24,10 @@
   --color-water-light: #38bdf8;
   --color-water-glow: rgba(14, 165, 233, 0.28);
   
-  --color-diet: #10b981;
-  --color-diet-light: #34d399;
-  --color-diet-glow: rgba(16, 185, 129, 0.25);
+  --color-diet: #84cc16;
+  --color-diet-light: #a3e635;
+  --color-diet-dark: #65a30d;
+  --color-diet-glow: rgba(132, 204, 22, 0.32);
   --color-protein: #6366f1;
   --color-carbs: #f59e0b;
   --color-fats: #ec4899;
@@ -227,9 +228,10 @@ html, body {
 }
 
 .btn-diet {
-  background: linear-gradient(135deg, var(--color-diet), #047857);
-  color: #ffffff;
-  box-shadow: 0 4px 14px var(--color-diet-glow);
+  background: linear-gradient(135deg, #84cc16, #65a30d);
+  color: #0f172a;
+  font-weight: 800;
+  box-shadow: 0 4px 14px rgba(132, 204, 22, 0.35);
 }
 
 .btn-workout {

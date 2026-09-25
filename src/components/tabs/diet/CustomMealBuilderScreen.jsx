@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ArrowLeft, Utensils, Flame, Plus, Scale, Trash2, Check, CheckCircle2, Search, X
 } from 'lucide-react';
@@ -15,13 +15,10 @@ export default function CustomMealBuilderScreen({
   const [savedToast, setSavedToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  // Ingredient picker modal states
+  // Full screen ingredient picker state (matching Add Meal UI)
   const [isIngredientPickerOpen, setIsIngredientPickerOpen] = useState(false);
   const [selectedIngredientItems, setSelectedIngredientItems] = useState([]);
   const [ingredientSearch, setIngredientSearch] = useState('');
-  const [isIngDragging, setIsIngDragging] = useState(false);
-  const [ingDragY, setIngDragY] = useState(0);
-  const touchStartYRef = useRef(0);
 
   const builderTotals = useMemo(() => calculateMealTotal(builderItems), [builderItems]);
 
@@ -29,7 +26,7 @@ export default function CustomMealBuilderScreen({
     const list = foodDatabase || [];
     const q = ingredientSearch.toLowerCase().trim();
     return list.filter(item => {
-      return !q || item.name.toLowerCase().includes(q) || (item.categoryLabel && item.categoryLabel.toLowerCase().includes(q));
+      return !q || (item?.name || '').toLowerCase().includes(q) || ((item?.categoryLabel || '').toLowerCase().includes(q));
     });
   }, [foodDatabase, ingredientSearch]);
 
@@ -43,6 +40,12 @@ export default function CustomMealBuilderScreen({
     setSelectedIngredientItems([]);
     setIngredientSearch('');
     setIsIngredientPickerOpen(true);
+  };
+
+  const handleCloseAddIngredient = () => {
+    setIsIngredientPickerOpen(false);
+    setSelectedIngredientItems([]);
+    setIngredientSearch('');
   };
 
   const handleToggleSelectIngredient = (food) => {
@@ -70,6 +73,7 @@ export default function CustomMealBuilderScreen({
     setBuilderItems(prev => [...prev, ...newItems]);
     setIsIngredientPickerOpen(false);
     setSelectedIngredientItems([]);
+    setIngredientSearch('');
     showToast(`Added ${newItems.length} ingredient${newItems.length > 1 ? 's' : ''}! 🥗`);
   };
 
@@ -115,29 +119,112 @@ export default function CustomMealBuilderScreen({
     }, 400);
   };
 
-  // Swipe handlers for add ingredient modal
-  const handleIngTouchStart = (e) => {
-    touchStartYRef.current = e.touches[0].clientY;
-    setIsIngDragging(true);
-  };
+  // If the user tapped "Add Ingredient", render the dedicated full-screen Add Ingredient page
+  // using the identical UI as TrackMealCategoryScreen (Add Meal UI)
+  if (isIngredientPickerOpen) {
+    return (
+      <div className="track-meal-screen modern-details-theme">
+        {/* Top Bar with Back Button */}
+        <div className="track-meal-top-bar">
+          <button
+            type="button"
+            className="btn-track-back"
+            onClick={handleCloseAddIngredient}
+            title="Back to Custom Meal Builder"
+          >
+            <ArrowLeft size={22} />
+          </button>
+        </div>
 
-  const handleIngTouchMove = (e) => {
-    if (!isIngDragging) return;
-    const currentY = e.touches[0].clientY;
-    const diff = currentY - touchStartYRef.current;
-    if (diff > 0) {
-      setIngDragY(diff);
-    }
-  };
+        {/* Search Input Bar */}
+        <div className="track-meal-search-container">
+          <div className="track-meal-search-box">
+            <Search size={18} className="search-icon-gray" />
+            <input
+              type="text"
+              className="track-meal-search-input"
+              placeholder="Search by Food Name/Dish"
+              value={ingredientSearch}
+              onChange={(e) => setIngredientSearch(e.target.value)}
+              autoFocus
+            />
+            {ingredientSearch && (
+              <button
+                type="button"
+                className="btn-clear-search"
+                onClick={() => setIngredientSearch('')}
+                title="Clear search"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+        </div>
 
-  const handleIngTouchEnd = () => {
-    if (ingDragY > 120) {
-      setIsIngredientPickerOpen(false);
-      setSelectedIngredientItems([]);
-    }
-    setIsIngDragging(false);
-    setIngDragY(0);
-  };
+        {/* Scrollable Content: Food / Ingredient list matching Add Meal UI */}
+        <div className="track-meal-scroll-body">
+          <div className="track-meal-section">
+            <div className="track-section-header">
+              <span className="track-section-title">Ingredients & Foods</span>
+            </div>
+            <div className="track-items-list">
+              {filteredIngredients.length === 0 ? (
+                <div className="meal-empty-note" style={{ padding: "16px 14px" }}>
+                  No foods found matching "{ingredientSearch}"
+                </div>
+              ) : (
+                filteredIngredients.map(item => {
+                  const scale = (item.defaultWeight || item.baseWeight || 100) / (item.baseWeight || 100);
+                  const cals = Math.round(item.calories * scale);
+                  const servingDesc = item.serving || `${item.defaultWeight || item.baseWeight || 100}${item.unit || 'g'}`;
+                  const isSelected = selectedIngredientItems.some(it => it.id === item.id);
+                  return (
+                    <div
+                      key={item.id}
+                      className={`track-meal-item-row ${isSelected ? 'selected' : ''}`}
+                      onClick={() => handleToggleSelectIngredient(item)}
+                    >
+                      <div className="item-text-col">
+                        <span className="item-title">{item.name}</span>
+                        <span className="item-subtitle">{servingDesc}</span>
+                      </div>
+                      <div className="item-action-col">
+                        <span className="item-cals">{cals} Cal</span>
+                        <button
+                          type="button"
+                          className={`btn-food-plus ${isSelected ? 'selected' : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleSelectIngredient(item);
+                          }}
+                          title={isSelected ? `Deselect ${item.name}` : `Select ${item.name}`}
+                        >
+                          {isSelected ? <Check size={16} strokeWidth={2.6} /> : <Plus size={16} />}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Sticky Bottom Add Action Button */}
+        <div className="track-meal-sticky-bottom">
+          <button
+            type="button"
+            className="btn-track-category-lime"
+            disabled={selectedIngredientItems.length === 0}
+            onClick={handleCommitAddIngredients}
+          >
+            Add Ingredient{selectedIngredientItems.length > 1 ? 's' : ''}
+            {selectedIngredientItems.length > 0 ? ` (${selectedIngredientItems.length})` : ''}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="custom-meal-screen modern-details-theme">
@@ -318,141 +405,6 @@ export default function CustomMealBuilderScreen({
         <div className="details-floating-toast">
           <CheckCircle2 size={16} />
           <span>{toastMessage || 'Saved successfully!'}</span>
-        </div>
-      )}
-
-      {/* Add Ingredient Picker Modal */}
-      {isIngredientPickerOpen && (
-        <div
-          className="modal-overlay modern-diet-modal-overlay"
-          onClick={() => {
-            setIsIngredientPickerOpen(false);
-            setIngDragY(0);
-            setSelectedIngredientItems([]);
-          }}
-        >
-          <div
-            className="modal-content add-ingredient-modal-content"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              transform: ingDragY > 0 ? `translateY(${ingDragY}px)` : 'none',
-              transition: isIngDragging ? 'none' : 'transform 0.25s ease-out',
-            }}
-          >
-            <div
-              className="modal-drag-pill-area"
-              onTouchStart={handleIngTouchStart}
-              onTouchMove={handleIngTouchMove}
-              onTouchEnd={handleIngTouchEnd}
-            >
-              <div className="modal-drag-pill" />
-            </div>
-
-            {/* Header */}
-            <div
-              className="edit-goals-header-row"
-              onTouchStart={handleIngTouchStart}
-              onTouchMove={handleIngTouchMove}
-              onTouchEnd={handleIngTouchEnd}
-            >
-              <div className="edit-goals-title-group">
-                <h3 className="edit-goals-title">Add Ingredient</h3>
-              </div>
-              <button
-                type="button"
-                className="btn-modal-close-round"
-                onClick={() => {
-                  setIsIngredientPickerOpen(false);
-                  setIngDragY(0);
-                  setSelectedIngredientItems([]);
-                }}
-                aria-label="Close modal"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Ingredient Database Browser (Search & Multi-Selection) */}
-            <div className="ingredient-browser-view">
-              {/* Search Bar */}
-              <div className="ingredient-search-bar">
-                <Search size={17} className="search-icon-gray" />
-                <input
-                  type="text"
-                  className="ingredient-search-input"
-                  placeholder="Search oils, nuts, grains, dairy, meats..."
-                  value={ingredientSearch}
-                  onChange={(e) => setIngredientSearch(e.target.value)}
-                  autoFocus
-                />
-                {ingredientSearch && (
-                  <button
-                    type="button"
-                    className="btn-clear-ing-search"
-                    onClick={() => setIngredientSearch('')}
-                    title="Clear search"
-                  >
-                    <X size={15} />
-                  </button>
-                )}
-              </div>
-
-              {/* Ingredients List */}
-              <div className="track-items-list ingredient-modal-track-list">
-                {filteredIngredients.length === 0 ? (
-                  <div className="ingredient-db-empty">
-                    <span>No ingredients found matching "{ingredientSearch}"</span>
-                  </div>
-                ) : (
-                  filteredIngredients.map(item => {
-                    const scale = (item.defaultWeight || item.baseWeight || 100) / (item.baseWeight || 100);
-                    const cals = Math.round(item.calories * scale);
-                    const servingDesc = item.serving || `${item.defaultWeight || item.baseWeight || 100}${item.unit || 'g'}`;
-                    const isSelected = selectedIngredientItems.some(it => it.id === item.id);
-                    return (
-                      <div
-                        key={item.id}
-                        className={`track-meal-item-row ${isSelected ? 'selected' : ''}`}
-                        onClick={() => handleToggleSelectIngredient(item)}
-                      >
-                        <div className="item-text-col">
-                          <span className="item-title">{item.name}</span>
-                          <span className="item-subtitle">{servingDesc}</span>
-                        </div>
-                        <div className="item-action-col">
-                          <span className="item-cals">{cals} Cal</span>
-                          <button
-                            type="button"
-                            className={`btn-food-plus ${isSelected ? 'selected' : ''}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleSelectIngredient(item);
-                            }}
-                            title={isSelected ? `Deselect ${item.name}` : `Select ${item.name}`}
-                          >
-                            {isSelected ? <Check size={16} strokeWidth={2.6} /> : <Plus size={16} />}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-              {/* Sticky Bottom Action Button */}
-              <div className="ingredient-modal-sticky-bottom">
-                <button
-                  type="button"
-                  className="btn-track-category-lime"
-                  disabled={selectedIngredientItems.length === 0}
-                  onClick={handleCommitAddIngredients}
-                >
-                  Add Ingredient{selectedIngredientItems.length > 1 ? 's' : ''}
-                  {selectedIngredientItems.length > 0 ? ` (${selectedIngredientItems.length})` : ''}
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>
