@@ -2895,7 +2895,7 @@
   background: #fecaca;
 }
 
-/* Fixed Bottom Bar (Transparent Floating Container) */
+/* Fixed Bottom Bar */
 .custom-meal-sticky-bottom {
   position: fixed;
   bottom: 0;
@@ -2916,7 +2916,7 @@
   pointer-events: auto;
 }
 
-[data-theme='light'] .custom-meal-sticky-bottom {
+[data-theme="light"] .custom-meal-sticky-bottom {
   background: transparent !important;
   background-color: transparent !important;
   border: none !important;
@@ -2941,6 +2941,7 @@
   box-shadow: 0 4px 20px rgba(132, 204, 22, 0.45);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   letter-spacing: -0.2px;
+  opacity: 1 !important;
 }
 
 .btn-save-custom-meal-lime:hover:not(:disabled) {
@@ -2954,9 +2955,18 @@
 }
 
 .btn-save-custom-meal-lime:disabled {
-  opacity: 0.45;
+  background: #27272a !important;
+  color: #71717a !important;
+  opacity: 1 !important;
   cursor: not-allowed;
   box-shadow: none;
+  transform: none !important;
+}
+
+[data-theme='light'] .btn-save-custom-meal-lime:disabled {
+  background: #e2e8f0 !important;
+  color: #94a3b8 !important;
+  opacity: 1 !important;
 }
 
 /* Modern Ingredient Picker Modal Styles (Top-aligned full height) */
@@ -3175,8 +3185,7 @@
   border-top: 1px solid rgba(0, 0, 0, 0.04);
 }
 
-.ingredient-modal-sticky-bottom .btn-track-category-lime,
-.btn-save-custom-meal-lime {
+.ingredient-modal-sticky-bottom .btn-track-category-lime {
   width: 100%;
   max-width: 504px;
   margin: 0 auto;
@@ -3195,26 +3204,32 @@
   box-shadow: 0 4px 20px rgba(132, 204, 22, 0.45);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   letter-spacing: -0.2px;
+  opacity: 1 !important;
 }
 
-.btn-track-category-lime:hover:not(:disabled),
-.btn-save-custom-meal-lime:hover:not(:disabled) {
+.btn-track-category-lime:hover:not(:disabled) {
   background: #a3e635;
   transform: translateY(-2px);
   box-shadow: 0 6px 24px rgba(132, 204, 22, 0.6);
 }
 
-.btn-track-category-lime:active:not(:disabled),
-.btn-save-custom-meal-lime:active:not(:disabled) {
+.btn-track-category-lime:active:not(:disabled) {
   transform: translateY(0);
 }
 
-.btn-track-category-lime:disabled,
-.btn-save-custom-meal-lime:disabled {
-  opacity: 0.45;
+.btn-track-category-lime:disabled {
+  background: #27272a !important;
+  color: #71717a !important;
+  opacity: 1 !important;
   cursor: not-allowed;
   box-shadow: none;
   transform: none !important;
+}
+
+[data-theme='light'] .btn-track-category-lime:disabled {
+  background: #e2e8f0 !important;
+  color: #94a3b8 !important;
+  opacity: 1 !important;
 }
 
 /* Modern Calorie & Macro Preview Card on Diet Tab */
@@ -4029,7 +4044,7 @@
   color: #8e8e93;
 }
 
-/* Sticky Bottom Action Button (Transparent Floating Container) */
+/* Sticky Bottom Action Button */
 .food-edit-sticky-bottom {
   position: fixed;
   bottom: 0;
@@ -4050,7 +4065,7 @@
   pointer-events: auto;
 }
 
-[data-theme='light'] .food-edit-sticky-bottom {
+[data-theme="light"] .food-edit-sticky-bottom {
   background: transparent !important;
   background-color: transparent !important;
   border: none !important;
