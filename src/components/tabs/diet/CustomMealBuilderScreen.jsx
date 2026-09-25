@@ -119,7 +119,7 @@ export default function CustomMealBuilderScreen({
     }, 400);
   };
 
-  // If the user tapped "Add Ingredient", render the dedicated full-screen Add Ingredient page
+  // If the user tapped "<Check size={19} strokeWidth={2.8} /> Add Ingredient", render the dedicated full-screen <Check size={19} strokeWidth={2.8} /> Add Ingredient page
   // using the identical UI as TrackMealCategoryScreen (Add Meal UI)
   if (isIngredientPickerOpen) {
     return (
@@ -214,11 +214,11 @@ export default function CustomMealBuilderScreen({
         <div className="track-meal-sticky-bottom">
           <button
             type="button"
-            className="btn-track-category-lime"
+            className="btn-save-custom-meal-lime"
             disabled={selectedIngredientItems.length === 0}
             onClick={handleCommitAddIngredients}
           >
-            Add Ingredient{selectedIngredientItems.length > 1 ? 's' : ''}
+            <Check size={19} strokeWidth={2.8} /> Add Ingredient{selectedIngredientItems.length > 1 ? 's' : ''}
             {selectedIngredientItems.length > 0 ? ` (${selectedIngredientItems.length})` : ''}
           </button>
         </div>

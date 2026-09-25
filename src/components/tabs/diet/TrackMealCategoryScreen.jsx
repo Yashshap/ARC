@@ -212,11 +212,11 @@ export default function TrackMealCategoryScreen({
       <div className="track-meal-sticky-bottom">
         <button
           type="button"
-          className="btn-track-category-lime"
+          className="btn-save-custom-meal-lime"
           onClick={handleCommitAddToMeal}
           disabled={selectedMealItems.length === 0}
         >
-          Add to {categoryLabel}
+          <Check size={19} strokeWidth={2.8} /> Add to {categoryLabel}
           {selectedMealItems.length > 0 ? ` (${selectedMealItems.length})` : ''}
         </button>
       </div>
