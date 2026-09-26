@@ -999,6 +999,15 @@ export function AppProvider({ children }) {
         setIsFullScreenPage,
         toggleTheme,
         setTheme,
+        purchasePremium: async () => {
+          setData(prev => {
+            const nextSub = { ...prev.subscription, isPremium: true, plan: "premium_monthly" };
+            dbSaveAppStateKey("subscription", nextSub).catch(console.error);
+            return { ...prev, subscription: nextSub };
+          });
+          return true;
+        },
+        restorePurchases: async () => { return true; },
         // Water
         addWater,
         removeWaterLog,

@@ -16,6 +16,8 @@ import PrivacyPage from "./components/settings/PrivacyPage";
 import AuthScreenModal from "./components/auth/AuthScreenModal";
 import OnboardingFlow from "./components/auth/OnboardingFlow";
 import "./styles/theme.css";
+import PremiumWrapper from "./components/subscription/PremiumWrapper";
+import "./styles/subscription.css";
 import "./App.css";
 
 function MainLayout() {
@@ -127,7 +129,9 @@ function MainLayout() {
           )}
           {activeTab === "diet" && (
             <ErrorBoundary name="Diet Tracker">
-              <DietTab />
+              <PremiumWrapper featureName="Diet & Macros">
+                <DietTab />
+              </PremiumWrapper>
             </ErrorBoundary>
           )}
           {activeTab === "workout" && (
@@ -137,12 +141,16 @@ function MainLayout() {
           )}
           {activeTab === "care" && (
             <ErrorBoundary name="Care & Pills">
-              <CareAndPillsTab />
+              <PremiumWrapper featureName="Skin & Habit Tracking">
+                <CareAndPillsTab />
+              </PremiumWrapper>
             </ErrorBoundary>
           )}
           {activeTab === "analytics" && (
             <ErrorBoundary name="Analytics">
-              <AnalyticsTab />
+              <PremiumWrapper featureName="Advanced Analytics">
+                <AnalyticsTab />
+              </PremiumWrapper>
             </ErrorBoundary>
           )}
           {activeTab === "profile" && (

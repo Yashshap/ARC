@@ -2,24 +2,10 @@ import Dexie from 'dexie';
 import { ArcDatabase, db, setDatabaseInstance } from '../db/arcDatabase';
 import { INITIAL_DATA } from '../data/initialData';
 import { FOOD_DATABASE } from '../data/foodDatabase';
-import { scheduleDiskSnapshot, loadDiskSnapshot } from './snapshotService';
+import { scheduleDiskSnapshot } from './snapshotService';
 
 const STORAGE_MIGRATION_KEY = 'vitalsync_health_app_data_v1';
 let currentUserId = null;
-
-/**
- * Requests persistent storage from the browser/WebView so Android OS storage cleaners
- * do not evict IndexedDB tables under low disk space.
- */
-async function ensurePersistentStorage() {
-  try {
-    if (typeof navigator !== 'undefined' && navigator.storage && typeof navigator.storage.persist === 'function') {
-      await navigator.storage.persist();
-    }
-  } catch {
-    // Ignore if unsupported
-  }
-}
 
 /**
  * Checks if the current session belongs to an authenticated user (not guest).
@@ -37,8 +23,6 @@ export function isUserAuthenticated() {
  */
 export async function switchUserDatabase(userId) {
   try {
-    await ensurePersistentStorage();
-
     if (db) {
       try {
         db.close();
@@ -80,7 +64,7 @@ export async function triggerSnapshotUpdate() {
   if (!isUserAuthenticated()) return;
   try {
     const jsonString = await exportDatabaseToJson();
-    scheduleDiskSnapshot(jsonString, currentUserId);
+    scheduleDiskSnapshot(jsonString);
   } catch (err) {
     console.warn('Could not schedule snapshot update:', err);
   }
@@ -92,6 +76,7 @@ export async function triggerSnapshotUpdate() {
 export async function purgeLegacyDatabases() {
   try {
     localStorage.removeItem(STORAGE_MIGRATION_KEY);
+    localStorage.removeItem('arc_health_snapshot_disk_fallback');
 
     try {
       await Dexie.delete('ArcHealthDatabase');
@@ -111,8 +96,7 @@ export async function purgeLegacyDatabases() {
 /**
  * Initialize Dexie IndexedDB for the current user.
  * Guests do not store data in the database.
- * Authenticated users receive a clean database with the reference food catalog,
- * or automatically recover from their native Android Directory.Data backup snapshot if present.
+ * Authenticated users receive a clean database with the reference food catalog.
  *
  * Returns the assembled app state for AppContext.
  */
@@ -133,15 +117,6 @@ export async function initDatabase() {
           isCustom: false,
         }));
         await db.foods.bulkPut(foodCatalog);
-      }
-
-      // Check if a native Android Auto-Backup / Directory.Data snapshot exists for this user
-      const savedSnapshot = await loadDiskSnapshot(currentUserId);
-      if (savedSnapshot && savedSnapshot.data) {
-        const restored = await importDatabaseFromJson(savedSnapshot);
-        if (restored) {
-          return await loadAssembledState();
-        }
       }
 
       // Initialize clean user app state with zero dummy data
@@ -165,6 +140,7 @@ export async function initDatabase() {
         { key: 'pillAnalytics', value: null },
         { key: 'fapCounterEnabled', value: false },
         { key: 'userRating', value: null },
+        { key: 'subscription', value: INITIAL_DATA.subscription },
       ];
       await db.appState.bulkPut(statePairs);
     }
@@ -263,6 +239,7 @@ async function loadAssembledState() {
     userRating: stateMap.userRating || null,
     fapCounterEnabled: stateMap.fapCounterEnabled || false,
     auth: stateMap.auth || INITIAL_DATA.auth,
+    subscription: stateMap.subscription || INITIAL_DATA.subscription,
   };
 }
 

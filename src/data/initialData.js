@@ -52,4 +52,10 @@ export const INITIAL_DATA = {
     email: null,
     joinedDate: null,
   },
+  subscription: {
+    isPremium: false,
+    plan: "free",
+    expiryDate: null,
+    joinedDate: null,
+  },
 };

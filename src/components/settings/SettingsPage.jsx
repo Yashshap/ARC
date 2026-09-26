@@ -21,6 +21,8 @@ import {
   CheckCircle2
 } from 'lucide-react';
 
+import PaywallScreen from "../subscription/PaywallScreen";
+
 export default function SettingsPage() {
   const {
     data,
@@ -37,6 +39,7 @@ export default function SettingsPage() {
   } = useApp();
 
   const { theme, notifications, userRating, auth } = data;
+  const [isPaywallOpen, setIsPaywallOpen] = useState(false);
 
   // Modals state
   const [isRateModalOpen, setIsRateModalOpen] = useState(false);
@@ -128,6 +131,57 @@ export default function SettingsPage() {
         {/* ================= 1. THEME SECTION ================= */}
         <section className="settings-section">
           <div className="settings-section-header">
+            <span className="settings-section-title">Subscription</span>
+          </div>
+          
+          <div className="settings-card glass-card relative overflow-hidden">
+            {data?.subscription?.isPremium ? (
+              <div className="p-4" style={{background:"linear-gradient(to bottom right, rgba(30,41,59,0.8), rgba(30,41,59,0.4))"}}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(250,204,21,0.2)]">
+                    <Star className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                      Premium Member
+                    </h3>
+                    <p className="text-slate-400 text-xs">Active • Renews via Google Play</p>
+                  </div>
+                </div>
+                <a 
+                  href="https://play.google.com/store/account/subscriptions" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-full bg-slate-700/50 hover:bg-slate-700/80 text-slate-300 font-medium py-2.5 rounded-xl text-sm transition-colors block text-center mt-2"
+                >
+                  Manage Subscription
+                </a>
+              </div>
+            ) : (
+              <div className="p-4 bg-slate-800/40">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-slate-700/50 rounded-full flex items-center justify-center border border-slate-600">
+                    <ShieldCheck className="w-5 h-5 text-slate-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-300">Free Tier</h3>
+                    <p className="text-slate-500 text-xs">Basic tracking unlocked</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsPaywallOpen(true)}
+                  className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold py-2.5 rounded-xl text-sm transition-transform active:scale-[0.98] shadow-[0_0_20px_rgba(250,204,21,0.15)] flex items-center justify-center gap-2 mt-2"
+                >
+                  <Star className="w-4 h-4" />
+                  Upgrade to Premium
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="settings-section">
+          <div className="settings-section-header">
             <span className="settings-section-title">Appearance</span>
           </div>
 
@@ -161,6 +215,57 @@ export default function SettingsPage() {
         </section>
 
         {/* ================= 2. NOTIFICATIONS SECTION ================= */}
+        <section className="settings-section">
+          <div className="settings-section-header">
+            <span className="settings-section-title">Subscription</span>
+          </div>
+          
+          <div className="settings-card glass-card relative overflow-hidden">
+            {data?.subscription?.isPremium ? (
+              <div className="p-4" style={{background:"linear-gradient(to bottom right, rgba(30,41,59,0.8), rgba(30,41,59,0.4))"}}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(250,204,21,0.2)]">
+                    <Star className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                      Premium Member
+                    </h3>
+                    <p className="text-slate-400 text-xs">Active • Renews via Google Play</p>
+                  </div>
+                </div>
+                <a 
+                  href="https://play.google.com/store/account/subscriptions" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-full bg-slate-700/50 hover:bg-slate-700/80 text-slate-300 font-medium py-2.5 rounded-xl text-sm transition-colors block text-center mt-2"
+                >
+                  Manage Subscription
+                </a>
+              </div>
+            ) : (
+              <div className="p-4 bg-slate-800/40">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-slate-700/50 rounded-full flex items-center justify-center border border-slate-600">
+                    <ShieldCheck className="w-5 h-5 text-slate-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-300">Free Tier</h3>
+                    <p className="text-slate-500 text-xs">Basic tracking unlocked</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsPaywallOpen(true)}
+                  className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold py-2.5 rounded-xl text-sm transition-transform active:scale-[0.98] shadow-[0_0_20px_rgba(250,204,21,0.15)] flex items-center justify-center gap-2 mt-2"
+                >
+                  <Star className="w-4 h-4" />
+                  Upgrade to Premium
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
+
         <section className="settings-section">
           <div className="settings-section-header">
             <span className="settings-section-title">Notifications</span>
@@ -274,6 +379,57 @@ export default function SettingsPage() {
         {/* ================= 3. HABITS & TRACKERS ================= */}
         <section className="settings-section">
           <div className="settings-section-header">
+            <span className="settings-section-title">Subscription</span>
+          </div>
+          
+          <div className="settings-card glass-card relative overflow-hidden">
+            {data?.subscription?.isPremium ? (
+              <div className="p-4" style={{background:"linear-gradient(to bottom right, rgba(30,41,59,0.8), rgba(30,41,59,0.4))"}}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(250,204,21,0.2)]">
+                    <Star className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                      Premium Member
+                    </h3>
+                    <p className="text-slate-400 text-xs">Active • Renews via Google Play</p>
+                  </div>
+                </div>
+                <a 
+                  href="https://play.google.com/store/account/subscriptions" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-full bg-slate-700/50 hover:bg-slate-700/80 text-slate-300 font-medium py-2.5 rounded-xl text-sm transition-colors block text-center mt-2"
+                >
+                  Manage Subscription
+                </a>
+              </div>
+            ) : (
+              <div className="p-4 bg-slate-800/40">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-slate-700/50 rounded-full flex items-center justify-center border border-slate-600">
+                    <ShieldCheck className="w-5 h-5 text-slate-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-300">Free Tier</h3>
+                    <p className="text-slate-500 text-xs">Basic tracking unlocked</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsPaywallOpen(true)}
+                  className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold py-2.5 rounded-xl text-sm transition-transform active:scale-[0.98] shadow-[0_0_20px_rgba(250,204,21,0.15)] flex items-center justify-center gap-2 mt-2"
+                >
+                  <Star className="w-4 h-4" />
+                  Upgrade to Premium
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="settings-section">
+          <div className="settings-section-header">
             <span className="settings-section-title">Habits & Trackers</span>
           </div>
 
@@ -311,6 +467,57 @@ export default function SettingsPage() {
 
 
         {/* ================= 5. ENGAGEMENT & INFORMATION ================= */}
+        <section className="settings-section">
+          <div className="settings-section-header">
+            <span className="settings-section-title">Subscription</span>
+          </div>
+          
+          <div className="settings-card glass-card relative overflow-hidden">
+            {data?.subscription?.isPremium ? (
+              <div className="p-4" style={{background:"linear-gradient(to bottom right, rgba(30,41,59,0.8), rgba(30,41,59,0.4))"}}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(250,204,21,0.2)]">
+                    <Star className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                      Premium Member
+                    </h3>
+                    <p className="text-slate-400 text-xs">Active • Renews via Google Play</p>
+                  </div>
+                </div>
+                <a 
+                  href="https://play.google.com/store/account/subscriptions" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-full bg-slate-700/50 hover:bg-slate-700/80 text-slate-300 font-medium py-2.5 rounded-xl text-sm transition-colors block text-center mt-2"
+                >
+                  Manage Subscription
+                </a>
+              </div>
+            ) : (
+              <div className="p-4 bg-slate-800/40">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-slate-700/50 rounded-full flex items-center justify-center border border-slate-600">
+                    <ShieldCheck className="w-5 h-5 text-slate-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-300">Free Tier</h3>
+                    <p className="text-slate-500 text-xs">Basic tracking unlocked</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsPaywallOpen(true)}
+                  className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold py-2.5 rounded-xl text-sm transition-transform active:scale-[0.98] shadow-[0_0_20px_rgba(250,204,21,0.15)] flex items-center justify-center gap-2 mt-2"
+                >
+                  <Star className="w-4 h-4" />
+                  Upgrade to Premium
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
+
         <section className="settings-section">
           <div className="settings-section-header">
             <span className="settings-section-title">Support & Community</span>
@@ -391,6 +598,57 @@ export default function SettingsPage() {
         </section>
 
         {/* ================= 4. ACCOUNT ACTIONS ================= */}
+        <section className="settings-section">
+          <div className="settings-section-header">
+            <span className="settings-section-title">Subscription</span>
+          </div>
+          
+          <div className="settings-card glass-card relative overflow-hidden">
+            {data?.subscription?.isPremium ? (
+              <div className="p-4" style={{background:"linear-gradient(to bottom right, rgba(30,41,59,0.8), rgba(30,41,59,0.4))"}}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(250,204,21,0.2)]">
+                    <Star className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                      Premium Member
+                    </h3>
+                    <p className="text-slate-400 text-xs">Active • Renews via Google Play</p>
+                  </div>
+                </div>
+                <a 
+                  href="https://play.google.com/store/account/subscriptions" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-full bg-slate-700/50 hover:bg-slate-700/80 text-slate-300 font-medium py-2.5 rounded-xl text-sm transition-colors block text-center mt-2"
+                >
+                  Manage Subscription
+                </a>
+              </div>
+            ) : (
+              <div className="p-4 bg-slate-800/40">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-slate-700/50 rounded-full flex items-center justify-center border border-slate-600">
+                    <ShieldCheck className="w-5 h-5 text-slate-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-300">Free Tier</h3>
+                    <p className="text-slate-500 text-xs">Basic tracking unlocked</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsPaywallOpen(true)}
+                  className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold py-2.5 rounded-xl text-sm transition-transform active:scale-[0.98] shadow-[0_0_20px_rgba(250,204,21,0.15)] flex items-center justify-center gap-2 mt-2"
+                >
+                  <Star className="w-4 h-4" />
+                  Upgrade to Premium
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
+
         <section className="settings-section">
           <div className="settings-section-header">
             <span className="settings-section-title">Account Management</span>
