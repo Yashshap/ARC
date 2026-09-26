@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Account &amp; Data Deletion — VitalSync (ARC Health &amp; Fitness Tracker)</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card: #111827;
+      --border: rgba(255, 255, 255, 0.09);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #84cc16;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      padding: 32px 16px 64px;
+    }
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    .header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 20px;
+      margin-bottom: 28px;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      font-weight: 700;
+      font-size: 0.78rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    h1 { font-size: 1.9rem; font-weight: 800; margin-bottom: 6px; }
+    .meta { color: var(--muted); font-size: 0.92rem; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px 24px;
+      margin-bottom: 18px;
+    }
+    h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #ffffff;
+    }
+    p, li {
+      color: #cbd5e1;
+      font-size: 0.96rem;
+    }
+    ol, ul { padding-left: 22px; margin-top: 8px; }
+    li { margin-bottom: 8px; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code {
+      background: rgba(255,255,255,0.08);
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <span class="badge">Google Play Data Safety &amp; Deletion</span>
+      <h1>VitalSync (ARC) — Account &amp; Data Deletion</h1>
+      <p class="meta">App Package: <code>com.vitalsync.health</code> &bull; Developer: Yash</p>
+    </header>
+
+    <section class="card">
+      <h2>Method 1: Instant In-App Account &amp; Data Deletion (Recommended)</h2>
+      <p>
+        You can permanently erase your account session and all health, water, nutrition, workout, and care data directly inside the VitalSync (ARC) app with zero waiting period:
+      </p>
+      <ol>
+        <li>Open the <strong>VitalSync (ARC)</strong> app on your device.</li>
+        <li>Tap your <strong>Profile avatar</strong> in the top header bar.</li>
+        <li>Tap the <strong>Settings</strong> (gear icon) button in the top right corner.</li>
+        <li>Scroll to the bottom and tap <strong>Delete Account</strong>.</li>
+        <li>Type <code>DELETE</code> to confirm and tap <strong>Delete Everything</strong>.</li>
+      </ol>
+      <p style="margin-top: 10px;">
+        <strong>What gets deleted immediately:</strong> Your Google Sign-In session token, user profile metrics, water hydration logs, meal &amp; macro/micronutrient logs, custom meals, workout plans/sessions, and skincare/supplement logs stored in <code>IndexedDB</code> and local device storage.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Method 2: Revoke Google Account Access &amp; Clear Device Data</h2>
+      <p>
+        Because VitalSync stores your health records locally on your device rather than on external servers, you can also delete all data without opening the app:
+      </p>
+      <ol>
+        <li>On your Android phone, open <strong>Settings &rarr; Apps &rarr; VitalSync &rarr; Storage &amp; cache</strong> and tap <strong>Clear storage / Clear data</strong> (or uninstall the app).</li>
+        <li>To revoke Google OAuth Sign-In permissions from the web at any time, visit <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer">https://myaccount.google.com/permissions</a>, select <strong>VitalSync</strong>, and click <strong>Remove Access</strong>.</li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h2>Method 3: Email Support Request</h2>
+      <p>
+        If you need assistance with data deletion or have any questions regarding data retention, contact us directly at:<br />
+        <strong>Email:</strong> <a href="mailto:yashshap.dev@gmail.com?subject=VitalSync%20Account%20Deletion%20Request">yashshap.dev@gmail.com</a>
+      </p>
+    </section>
+
+    <p class="meta" style="text-align: center; margin-top: 24px;">
+      <a href="/privacy-policy.html">&larr; View Full Privacy Policy</a>
+    </p>
+  </div>
+</body>
+</html>
