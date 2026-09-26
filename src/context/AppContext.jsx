@@ -245,16 +245,20 @@ export function AppProvider({ children }) {
     const today = getTodayDateString();
 
     const newItem = {
-      id: item.id || ('meal_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4)),
+      ...item,
+      id: item.uid || item.id || ('meal_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4)),
+      foodId: item.foodId || item.id,
       name: item.name,
       category,
       calories: Number(item.calories) || 0,
       protein: Number(item.protein) || 0,
       carbs: Number(item.carbs) || 0,
       fats: Number(item.fats) || 0,
+      fiber: Number(item.fiber) || 0,
       items: item.items || [],
-      weight: item.weight || null,
+      weight: Number(item.weight) || Number(item.defaultWeight) || Number(item.baseWeight) || 100,
       serving: item.serving || null,
+      quantity: item.quantity || item.serving || null,
       time: timeStr,
       date: today,
     };
@@ -308,11 +312,21 @@ export function AppProvider({ children }) {
     });
   };
 
-  const updateMealItem = (category, updatedItem) => {
+  const updateMealItem = (category, itemIdOrObj, updatedFields = {}) => {
+    const isObj = typeof itemIdOrObj === 'object' && itemIdOrObj !== null;
+    const targetId = isObj ? itemIdOrObj.id : itemIdOrObj;
+    const patch = isObj ? itemIdOrObj : updatedFields;
+
     setData(prev => {
-      const updatedCategoryMeals = (prev.diet.meals[category] || []).map(item =>
-        item.id === updatedItem.id ? { ...item, ...updatedItem, category } : item
-      );
+      let mergedItemForDb = null;
+      const updatedCategoryMeals = (prev.diet.meals[category] || []).map(item => {
+        if (item.id === targetId) {
+          const merged = { ...item, ...patch, id: item.id, category };
+          mergedItemForDb = merged;
+          return merged;
+        }
+        return item;
+      });
       const updatedMeals = {
         ...prev.diet.meals,
         [category]: updatedCategoryMeals,
@@ -320,7 +334,9 @@ export function AppProvider({ children }) {
       const updatedWeeklyHistory = syncDietWeeklyHistory(prev.diet.weeklyHistory, updatedMeals);
 
       // Async write to Dexie
-      dbUpdateMeal({ ...updatedItem, category }).catch(console.error);
+      if (mergedItemForDb) {
+        dbUpdateMeal(mergedItemForDb).catch(console.error);
+      }
       dbSaveAppStateKey('dietWeeklyHistory', updatedWeeklyHistory).catch(console.error);
 
       return {

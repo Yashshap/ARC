@@ -223,19 +223,24 @@ export default function DietTab() {
                       <div
                         key={item.id}
                         className={`meal-item-row ${isItemMenuActive ? 'has-active-menu' : ''}`}
+                        onClick={() => handleOpenEditItem(section.key, item)}
+                        style={{ cursor: 'pointer' }}
                       >
                         <div className="meal-item-details">
                           <span className="meal-item-name">{item.name}</span>
                           <div className="meal-item-qty-cal">
                             <span className="meal-item-qty">
-                              {item.weight ? `${Math.round(item.weight)}g` : (item.quantity || '1 serving')}
+                              {item.quantity || (item.weight ? `${Math.round(item.weight)}g` : '1 serving')}
                             </span>
                             <span className="meal-item-cal-sep">•</span>
                             <span className="meal-item-cal">{Math.round(item.calories)} kcal</span>
                           </div>
                         </div>
 
-                        <div className={`meal-item-menu-wrap ${isItemMenuActive ? 'active' : ''}`}>
+                        <div
+                          className={`meal-item-menu-wrap ${isItemMenuActive ? 'active' : ''}`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <button
                             type="button"
                             className="btn-dots-menu"
@@ -291,7 +296,7 @@ export default function DietTab() {
       >
         {({ close }) => (
           <FoodEditScreen
-            key={editingMealItem?.item?.id || 'none'}
+            key={`${editingMealItem?.item?.id || 'none'}_${editingMealItem?.item?.weight || 0}_${editingMealItem?.item?.calories || 0}`}
             editingMealItem={editingMealItem}
             onClose={close}
             onSave={handleSaveEditItem}

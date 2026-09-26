@@ -18,44 +18,72 @@ export default function FoodEditScreen({
   onClose,
   onSave,
   onDelete,
+  actionLabel,
 }) {
   const item = editingMealItem?.item;
   const category = editingMealItem?.category || "breakfast";
 
-  const dbMatch = DEFAULT_FOOD_DATABASE.find(f => f.id === item?.id || f.name.toLowerCase() === item?.name?.toLowerCase());
+  const dbMatch = DEFAULT_FOOD_DATABASE.find(
+    f => f.id === (item?.foodId || item?.id) || f.name.toLowerCase() === item?.name?.toLowerCase()
+  );
 
-  const baseWeight = Number(item?.weight) || Number(item?.baseWeight) || 100;
-  const baseCalories = Number(item?.calories) || 0;
-  const baseProtein = Number(item?.protein) || 0;
-  const baseCarbs = Number(item?.carbs) || 0;
-  const baseFats = Number(item?.fats) || 0;
-  const baseFiber = Number(item?.fiber) || Math.round(baseCarbs * 0.1 * 10) / 10;
+  // Standard 1-serving weight (for 'serving' unit)
+  const servingWeight =
+    Number(item?.baseServingWeight) ||
+    Number(dbMatch?.defaultWeight) ||
+    Number(dbMatch?.baseWeight) ||
+    Number(item?.defaultWeight) ||
+    Number(item?.baseWeight) ||
+    Number(item?.weight) ||
+    100;
 
-  // Reference micronutrients per 100g
-  const basePotassium = Number(item?.potassium || dbMatch?.potassium) || 0;
-  const baseSodium = Number(item?.sodium || dbMatch?.sodium) || 0;
-  const baseCalcium = Number(item?.calcium || dbMatch?.calcium) || 0;
-  const baseIron = Number(item?.iron || dbMatch?.iron) || 0;
-  const baseMagnesium = Number(item?.magnesium || dbMatch?.magnesium) || 0;
-  const baseZinc = Number(item?.zinc || dbMatch?.zinc) || 0;
-  const baseVitaminB12 = Number(item?.vitaminB12 ?? dbMatch?.vitaminB12) || 0;
-  const baseFolateB9 = Number(item?.folateB9 ?? dbMatch?.folateB9) || 0;
-  const baseVitaminD = Number(item?.vitaminD ?? dbMatch?.vitaminD) || 0;
+  // Current saved weight of this item instance
+  const initialWeight = Number(item?.weight) || servingWeight;
 
-  const [editQuantity, setEditQuantity] = useState(1);
-  const [editMeasure, setEditMeasure] = useState("serving");
+  // Per-100g reference macros (prefer dbMatch if available, else derive from item's current calories/weight)
+  const refWeight = dbMatch ? (Number(dbMatch.baseWeight) || 100) : Math.max(1, initialWeight);
+  const refCalories = dbMatch ? (Number(dbMatch.calories) || 0) : (Number(item?.calories) || 0);
+  const refProtein = dbMatch ? (Number(dbMatch.protein) || 0) : (Number(item?.protein) || 0);
+  const refCarbs = dbMatch ? (Number(dbMatch.carbs) || 0) : (Number(item?.carbs) || 0);
+  const refFats = dbMatch ? (Number(dbMatch.fats) || 0) : (Number(item?.fats) || 0);
+  const refFiber = dbMatch
+    ? (Number(dbMatch.fiber) || 0)
+    : (Number(item?.fiber) || Math.round(refCarbs * 0.1 * 10) / 10);
 
-  const [editItemWeight, setEditItemWeight] = useState(baseWeight);
-  const [editItemCalories, setEditItemCalories] = useState(baseCalories);
-  const [editItemProtein, setEditItemProtein] = useState(baseProtein);
-  const [editItemCarbs, setEditItemCarbs] = useState(baseCarbs);
-  const [editItemFats, setEditItemFats] = useState(baseFats);
-  const [editItemFiber, setEditItemFiber] = useState(baseFiber);
+  // Reference micronutrients per 100g (always from dbMatch per 100g when available, or scaled to 100g from item)
+  const microScaleTo100 = dbMatch ? 1 : (100 / Math.max(1, initialWeight));
+  const basePotassium = Number(dbMatch?.potassium ?? (item?.potassium ? item.potassium * microScaleTo100 : 0)) || 0;
+  const baseSodium = Number(dbMatch?.sodium ?? (item?.sodium ? item.sodium * microScaleTo100 : 0)) || 0;
+  const baseCalcium = Number(dbMatch?.calcium ?? (item?.calcium ? item.calcium * microScaleTo100 : 0)) || 0;
+  const baseIron = Number(dbMatch?.iron ?? (item?.iron ? item.iron * microScaleTo100 : 0)) || 0;
+  const baseMagnesium = Number(dbMatch?.magnesium ?? (item?.magnesium ? item.magnesium * microScaleTo100 : 0)) || 0;
+  const baseZinc = Number(dbMatch?.zinc ?? (item?.zinc ? item.zinc * microScaleTo100 : 0)) || 0;
+  const baseVitaminB12 = Number(dbMatch?.vitaminB12 ?? (item?.vitaminB12 ? item.vitaminB12 * microScaleTo100 : 0)) || 0;
+  const baseFolateB9 = Number(dbMatch?.folateB9 ?? (item?.folateB9 ? item.folateB9 * microScaleTo100 : 0)) || 0;
+  const baseVitaminD = Number(dbMatch?.vitaminD ?? (item?.vitaminD ? item.vitaminD * microScaleTo100 : 0)) || 0;
+
+  const initialScale = initialWeight / Math.max(1, refWeight);
+  const initialCals = item?.calories != null ? Math.round(Number(item.calories)) : Math.round(refCalories * initialScale);
+  const initialProt = item?.protein != null ? Math.round(Number(item.protein) * 10) / 10 : Math.round(refProtein * initialScale * 10) / 10;
+  const initialCarb = item?.carbs != null ? Math.round(Number(item.carbs) * 10) / 10 : Math.round(refCarbs * initialScale * 10) / 10;
+  const initialFat = item?.fats != null ? Math.round(Number(item.fats) * 10) / 10 : Math.round(refFats * initialScale * 10) / 10;
+  const initialFib = item?.fiber != null ? Math.round(Number(item.fiber) * 10) / 10 : Math.round(refFiber * initialScale * 10) / 10;
+
+  const [editQuantity, setEditQuantity] = useState(
+    item?.editQuantity != null ? item.editQuantity : Math.max(0.5, Math.round((initialWeight / Math.max(1, servingWeight)) * 10) / 10)
+  );
+  const [editMeasure, setEditMeasure] = useState(item?.editMeasure || "serving");
+
+  const [editItemWeight, setEditItemWeight] = useState(initialWeight);
+  const [editItemCalories, setEditItemCalories] = useState(initialCals);
+  const [editItemProtein, setEditItemProtein] = useState(initialProt);
+  const [editItemCarbs, setEditItemCarbs] = useState(initialCarb);
+  const [editItemFats, setEditItemFats] = useState(initialFat);
+  const [editItemFiber, setEditItemFiber] = useState(initialFib);
 
   if (!item) return null;
 
-  const currentWeightNum = Number(editItemWeight) || baseWeight || 100;
-  const scale = currentWeightNum / Math.max(1, baseWeight);
+  const currentWeightNum = Number(editItemWeight) || servingWeight || 100;
   const curScale = currentWeightNum / 100; // per 100g base for micronutrients
 
   const curPotassium = Math.round(basePotassium * curScale * 10) / 10;
@@ -73,15 +101,15 @@ export default function FoodEditScreen({
   const recalculateFromQuantityAndMeasure = (qty, measureKey) => {
     const q = Math.max(0.01, Number(qty) || 1);
     const measureObj = MEASURE_OPTIONS.find(m => m.key === measureKey) || MEASURE_OPTIONS[0];
-    const unitGrams = measureObj.getGrams(baseWeight);
+    const unitGrams = measureObj.getGrams(servingWeight);
     const totalGrams = Math.round(q * unitGrams);
 
-    const s = totalGrams / Math.max(1, baseWeight);
-    const cal = Math.round(baseCalories * s);
-    const p = Math.round(baseProtein * s * 10) / 10;
-    const c = Math.round(baseCarbs * s * 10) / 10;
-    const f = Math.round(baseFats * s * 10) / 10;
-    const fib = Math.round(baseFiber * s * 10) / 10;
+    const s = totalGrams / Math.max(1, refWeight);
+    const cal = Math.round(refCalories * s);
+    const p = Math.round(refProtein * s * 10) / 10;
+    const c = Math.round(refCarbs * s * 10) / 10;
+    const f = Math.round(refFats * s * 10) / 10;
+    const fib = Math.round(refFiber * s * 10) / 10;
 
     setEditItemWeight(totalGrams);
     setEditItemCalories(cal);
@@ -109,13 +137,12 @@ export default function FoodEditScreen({
     const totalGrams = Math.max(0, Number(newWeightVal) || 0);
     setEditItemWeight(newWeightVal);
 
-    const baseW = Math.max(1, baseWeight || 100);
-    const s = totalGrams / baseW;
-    const cal = Math.round(baseCalories * s);
-    const p = Math.round(baseProtein * s);
-    const c = Math.round(baseCarbs * s);
-    const f = Math.round(baseFats * s);
-    const fib = Math.round(baseFiber * s);
+    const s = totalGrams / Math.max(1, refWeight);
+    const cal = Math.round(refCalories * s);
+    const p = Math.round(refProtein * s * 10) / 10;
+    const c = Math.round(refCarbs * s * 10) / 10;
+    const f = Math.round(refFats * s * 10) / 10;
+    const fib = Math.round(refFiber * s * 10) / 10;
 
     setEditItemCalories(cal);
     setEditItemProtein(p);
@@ -124,13 +151,19 @@ export default function FoodEditScreen({
     setEditItemFiber(fib);
 
     const measureObj = MEASURE_OPTIONS.find(m => m.key === editMeasure) || MEASURE_OPTIONS[0];
-    const unitGrams = measureObj.getGrams(baseW);
-    const calculatedQty = Math.round(totalGrams / Math.max(1, unitGrams));
+    const unitGrams = measureObj.getGrams(servingWeight);
+    const calculatedQty = Math.round((totalGrams / Math.max(1, unitGrams)) * 10) / 10;
     setEditQuantity(calculatedQty);
   };
 
   const handleSave = () => {
     if (onSave) {
+      const finalWeight = Number(editItemWeight) || servingWeight || 100;
+      const unitSuffix = item.unit === "ml" ? "ml" : "g";
+      const updatedLabel = editMeasure === "g"
+        ? `${finalWeight}${unitSuffix}`
+        : `${editQuantity} ${editMeasure} (${finalWeight}${unitSuffix})`;
+
       onSave(category, item.id, {
         calories: Number(editItemCalories) || 0,
         protein: Number(editItemProtein) || 0,
@@ -146,7 +179,12 @@ export default function FoodEditScreen({
         vitaminB12: curVitaminB12,
         folateB9: curFolateB9,
         vitaminD: curVitaminD,
-        weight: Number(editItemWeight) || baseWeight || 100,
+        weight: finalWeight,
+        baseServingWeight: servingWeight,
+        editQuantity: Number(editQuantity) || 1,
+        editMeasure: editMeasure,
+        quantity: updatedLabel,
+        serving: updatedLabel,
       });
     }
     if (onClose) onClose();
@@ -270,7 +308,7 @@ export default function FoodEditScreen({
                 onChange={(e) => handleNetWeightChange(e.target.value)}
                 onBlur={() => {
                   if (!editItemWeight || Number(editItemWeight) <= 0) {
-                    handleNetWeightChange(baseWeight || 100);
+                    handleNetWeightChange(servingWeight || 100);
                   }
                 }}
                 min="1"
@@ -445,7 +483,7 @@ export default function FoodEditScreen({
           onClick={handleSave}
         >
           <Check size={19} strokeWidth={2.8} />
-          Update {category.charAt(0).toUpperCase() + category.slice(1)}
+          {actionLabel || `Update ${category.charAt(0).toUpperCase() + category.slice(1)}`}
         </button>
       </div>
     </div>

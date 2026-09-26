@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { calculateMealTotal } from '../../../utils/macroCalculations';
 import { DEFAULT_FOOD_DATABASE } from '../../../data/foodDatabase';
+import FoodEditScreen from './FoodEditScreen';
 
 export default function CustomMealBuilderScreen({
   onClose,
@@ -18,7 +19,9 @@ export default function CustomMealBuilderScreen({
   // Full screen ingredient picker state (matching Add Meal UI)
   const [isIngredientPickerOpen, setIsIngredientPickerOpen] = useState(false);
   const [selectedIngredientItems, setSelectedIngredientItems] = useState([]);
+  const [editedPickerMap, setEditedPickerMap] = useState({});
   const [ingredientSearch, setIngredientSearch] = useState('');
+  const [editingIngredientState, setEditingIngredientState] = useState(null); // { mode: 'builder' | 'picker', item }
 
   const builderTotals = useMemo(() => calculateMealTotal(builderItems), [builderItems]);
 
@@ -53,22 +56,31 @@ export default function CustomMealBuilderScreen({
     if (isAlreadySelected) {
       setSelectedIngredientItems(prev => prev.filter(it => it.id !== food.id));
     } else {
-      setSelectedIngredientItems(prev => [...prev, food]);
+      const customEntry = editedPickerMap[food.id] || food;
+      setSelectedIngredientItems(prev => [...prev, customEntry]);
     }
   };
 
   const handleCommitAddIngredients = () => {
-    const newItems = selectedIngredientItems.map(food => ({
-      id: `ing_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-      name: food.name,
-      baseWeight: food.baseWeight || 100,
-      weight: food.defaultWeight || food.baseWeight || 100,
-      calories: food.calories,
-      protein: food.protein,
-      carbs: food.carbs,
-      fats: food.fats,
-      unit: food.unit || 'g',
-    }));
+    const newItems = selectedIngredientItems.map(food => {
+      const dbRef = (foodDatabase || []).find(f => f.id === (food.foodId || food.id)) || food;
+      return {
+        ...dbRef,
+        id: `ing_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        foodId: dbRef.id,
+        name: food.name,
+        baseWeight: dbRef.baseWeight || 100,
+        weight: food.customWeight || food.defaultWeight || food.baseWeight || 100,
+        calories: dbRef.calories,
+        protein: dbRef.protein,
+        carbs: dbRef.carbs,
+        fats: dbRef.fats,
+        unit: food.unit || 'g',
+        editQuantity: food.editQuantity,
+        editMeasure: food.editMeasure,
+        quantity: food.quantity,
+      };
+    });
 
     setBuilderItems(prev => [...prev, ...newItems]);
     setIsIngredientPickerOpen(false);
@@ -88,6 +100,52 @@ export default function CustomMealBuilderScreen({
 
   const handleRemoveBuilderItem = (itemId) => {
     setBuilderItems(prev => prev.filter(it => it.id !== itemId));
+  };
+
+  const handleSaveEditedIngredient = (_cat, itemId, updatedFields) => {
+    if (!editingIngredientState) return;
+    if (editingIngredientState.mode === 'builder') {
+      setBuilderItems(prev => prev.map(it => {
+        if (it.id !== itemId) return it;
+        return {
+          ...it,
+          weight: updatedFields.weight,
+          editQuantity: updatedFields.editQuantity,
+          editMeasure: updatedFields.editMeasure,
+          quantity: updatedFields.quantity,
+          serving: updatedFields.serving,
+        };
+      }));
+    } else if (editingIngredientState.mode === 'picker') {
+      const baseFood = editingIngredientState.item;
+      const updatedFood = {
+        ...baseFood,
+        customWeight: updatedFields.weight,
+        weight: updatedFields.weight,
+        editQuantity: updatedFields.editQuantity,
+        editMeasure: updatedFields.editMeasure,
+        quantity: updatedFields.quantity,
+        serving: updatedFields.serving,
+      };
+      setEditedPickerMap(prev => ({ ...prev, [baseFood.id]: updatedFood }));
+      setSelectedIngredientItems(prev => {
+        const exists = prev.some(it => it.id === baseFood.id);
+        return exists
+          ? prev.map(it => (it.id === baseFood.id ? updatedFood : it))
+          : [...prev, updatedFood];
+      });
+    }
+    setEditingIngredientState(null);
+  };
+
+  const handleDeleteEditedIngredient = (_cat, itemId) => {
+    if (!editingIngredientState) return;
+    if (editingIngredientState.mode === 'builder') {
+      handleRemoveBuilderItem(itemId);
+    } else if (editingIngredientState.mode === 'picker') {
+      setSelectedIngredientItems(prev => prev.filter(it => it.id !== itemId));
+    }
+    setEditingIngredientState(null);
   };
 
   const handleSaveCustomMealSubmit = (e) => {
@@ -119,7 +177,35 @@ export default function CustomMealBuilderScreen({
     }, 400);
   };
 
-  // If the user tapped "<Check size={19} strokeWidth={2.8} /> Add Ingredient", render the dedicated full-screen <Check size={19} strokeWidth={2.8} /> Add Ingredient page
+  if (editingIngredientState) {
+    const targetItem = editingIngredientState.item;
+    const w = targetItem.customWeight || targetItem.weight || targetItem.defaultWeight || targetItem.baseWeight || 100;
+    const baseW = targetItem.baseWeight || 100;
+    const s = w / Math.max(1, baseW);
+    const editModalPayload = {
+      category: 'ingredient',
+      item: {
+        ...targetItem,
+        weight: w,
+        calories: Math.round((targetItem.calories || 0) * s),
+        protein: Math.round((targetItem.protein || 0) * s * 10) / 10,
+        carbs: Math.round((targetItem.carbs || 0) * s * 10) / 10,
+        fats: Math.round((targetItem.fats || 0) * s * 10) / 10,
+      },
+    };
+    return (
+      <FoodEditScreen
+        key={`${targetItem.id}_${w}`}
+        editingMealItem={editModalPayload}
+        onClose={() => setEditingIngredientState(null)}
+        onSave={handleSaveEditedIngredient}
+        onDelete={handleDeleteEditedIngredient}
+        actionLabel={editingIngredientState.mode === 'builder' ? 'Update Ingredient' : 'Save & Select Ingredient'}
+      />
+    );
+  }
+
+  // If the user tapped "Add Ingredient", render the dedicated full-screen Add Ingredient page
   // using the identical UI as TrackMealCategoryScreen (Add Meal UI)
   if (isIngredientPickerOpen) {
     return (
@@ -174,15 +260,17 @@ export default function CustomMealBuilderScreen({
                 </div>
               ) : (
                 filteredIngredients.map(item => {
-                  const scale = (item.defaultWeight || item.baseWeight || 100) / (item.baseWeight || 100);
+                  const displayItem = selectedIngredientItems.find(it => it.id === item.id) || editedPickerMap[item.id] || item;
+                  const activeW = displayItem.customWeight || displayItem.weight || item.defaultWeight || item.baseWeight || 100;
+                  const scale = activeW / (item.baseWeight || 100);
                   const cals = Math.round(item.calories * scale);
-                  const servingDesc = item.serving || `${item.defaultWeight || item.baseWeight || 100}${item.unit || 'g'}`;
+                  const servingDesc = displayItem.quantity || displayItem.serving || `${activeW}${item.unit || 'g'}`;
                   const isSelected = selectedIngredientItems.some(it => it.id === item.id);
                   return (
                     <div
                       key={item.id}
                       className={`track-meal-item-row ${isSelected ? 'selected' : ''}`}
-                      onClick={() => handleToggleSelectIngredient(item)}
+                      onClick={() => setEditingIngredientState({ mode: 'picker', item: displayItem })}
                     >
                       <div className="item-text-col">
                         <span className="item-title">{item.name}</span>
@@ -351,11 +439,16 @@ export default function CustomMealBuilderScreen({
             ) : (
               <div className="builder-items-list-modern">
                 {builderItems.map((item) => (
-                  <div key={item.id} className="builder-item-card-modern builder-item-row-clean">
+                  <div
+                    key={item.id}
+                    className="builder-item-card-modern builder-item-row-clean"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setEditingIngredientState({ mode: 'builder', item })}
+                  >
                     <div className="builder-item-info">
                       <span className="builder-item-name">{item.name}</span>
                     </div>
-                    <div className="builder-item-actions">
+                    <div className="builder-item-actions" onClick={(e) => e.stopPropagation()}>
                       <label className="builder-weight-pill" title="Tap to edit weight">
                         <input
                           type="number"
