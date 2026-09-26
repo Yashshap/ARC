@@ -17,6 +17,7 @@ import AuthScreenModal from "./components/auth/AuthScreenModal";
 import OnboardingFlow from "./components/auth/OnboardingFlow";
 import "./styles/theme.css";
 import PremiumWrapper from "./components/subscription/PremiumWrapper";
+import PaywallScreen from "./components/subscription/PaywallScreen";
 import "./styles/subscription.css";
 import "./App.css";
 
@@ -38,12 +39,16 @@ function MainLayout() {
   });
   const [authResultPopup, setAuthResultPopup] = useState(null);
   const [isRetryingAuth, setIsRetryingAuth] = useState(false);
+  const [showSoftPaywall, setShowSoftPaywall] = useState(false);
 
   // Keep onboarding visible until onboardingComplete is explicitly set to true by OnboardingFlow
   const shouldShowOnboarding = !onboardingComplete;
 
   const handleOnboardingComplete = (authResult) => {
     setOnboardingComplete(true);
+    if (!data?.subscription?.isPremium) {
+      setShowSoftPaywall(true);
+    }
     if (authResult && authResult.status) {
       setAuthResultPopup(authResult);
       if (authResult.status === "success") {
@@ -171,6 +176,7 @@ function MainLayout() {
         onComplete={handleOnboardingComplete}
       />
       {renderPageContent()}
+      {showSoftPaywall && <PaywallScreen onClose={() => setShowSoftPaywall(false)} />}
       <AuthScreenModal
         key={isAuthModalOpen ? "open" : "closed"}
         isOpen={isAuthModalOpen}

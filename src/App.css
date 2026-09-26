@@ -1118,7 +1118,7 @@
 
 /* ---------------- DIET DETAILS SCREEN (MATCHED TO REFERENCE IMAGE) ---------------- */
 .diet-details-screen.modern-details-theme {
-  min-height: 100vh;
+  
   background: var(--bg-app);
   color: var(--text-primary);
   display: flex;
@@ -2188,7 +2188,7 @@
 
 /* ---------------- CREATE CUSTOM MEAL SCREEN (ADAPTIVE THEME) ---------------- */
 .custom-meal-screen.modern-details-theme {
-  min-height: 100vh;
+  
   background: var(--bg-app);
   color: var(--text-primary);
   display: flex;
@@ -4484,7 +4484,7 @@
    Food Edit Screen (Fully Adaptive Dark & Light Themes with Opaque Surface)
    ========================================================================== */
 .food-edit-screen {
-  min-height: 100vh;
+  
   padding: 0 0 100px 0;
   animation: fadeIn 0.2s ease-out;
   max-width: 540px;
@@ -8813,8 +8813,8 @@
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  min-height: 100dvh;
+  
+  
   background: var(--bg-app);
 }
 
@@ -11040,7 +11040,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100dvh;
+  
   background: var(--bg-app);
 }
 
@@ -11048,7 +11048,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: 100dvh;
+  
   max-height: none;
   overflow: auto;
   padding: max(28px, var(--safe-top)) clamp(20px, 8vw, 96px) max(28px, var(--safe-bottom));
