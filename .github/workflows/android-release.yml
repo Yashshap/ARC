@@ -6,7 +6,7 @@ on:
     branches:
       - main
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   build-android:
@@ -21,14 +21,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
-      - name: Setup Java 21 (Required for Capacitor 8 / Android SDK 36)
+      - name: Setup Java 21
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'gradle'
+          distribution: "temurin"
+          java-version: "21"
+          cache: "gradle"
 
       - name: Install Web Dependencies & Build Web Assets
         run: |
@@ -68,15 +68,3 @@ jobs:
             android/app/build/outputs/apk/release/*.apk
             android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: warn
-
-      # Optional automatic Google Play Console upload once you have your $25 Play Developer Account
-      # and add GOOGLE_PLAY_SERVICE_ACCOUNT_JSON to GitHub Repository Secrets:
-      - name: Upload AAB to Google Play Internal Track (Auto-Deploy)
-        if: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON != '' }}
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: com.vitalsync.health
-          releaseFiles: android/app/build/outputs/bundle/release/*.aab
-          track: internal
-          status: completed
