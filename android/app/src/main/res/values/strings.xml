@@ -1,7 +1,7 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">VitalSync</string>
     <string name="title_activity_main">VitalSync</string>
-    <string name="package_name">com.vitalsync.health</string>
-    <string name="custom_url_scheme">com.vitalsync.health</string>
+    <string name="package_name">com.yash.vitalsync</string>
+    <string name="custom_url_scheme">com.yash.vitalsync</string>
 </resources>
