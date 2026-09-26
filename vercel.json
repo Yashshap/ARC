@@ -16,6 +16,14 @@
     {
       "source": "/delete-account",
       "destination": "/delete-account.html"
+    },
+    {
+      "source": "/creator-portal",
+      "destination": "/creator-portal.html"
+    },
+    {
+      "source": "/partner",
+      "destination": "/creator-portal.html"
     }
   ]
 }

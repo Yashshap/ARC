@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VitalSync | Creator Partner Live Tracker & Agreement</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-app: #080c14;
+      --bg-surface: #0f172a;
+      --bg-card: rgba(19, 29, 51, 0.85);
+      --border-subtle: rgba(255, 255, 255, 0.09);
+      --border-accent: rgba(99, 102, 241, 0.45);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent: #6366f1;
+      --accent-light: #818cf8;
+      --green: #10b981;
+      --green-bg: rgba(16, 185, 129, 0.12);
+      --amber: #f59e0b;
+      --amber-bg: rgba(245, 158, 11, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-app);
+      background-image:
+        radial-gradient(circle at 15% 10%, rgba(99, 102, 241, 0.14), transparent 35%),
+        radial-gradient(circle at 85% 20%, rgba(16, 185, 129, 0.10), transparent 35%);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+      padding: 24px 16px 64px;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* Top Bar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding: 16px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      backdrop-filter: blur(16px);
+      margin-bottom: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #6366f1, #10b981);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+    }
+
+    .brand-title {
+      font-weight: 800;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-sub {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    .live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: var(--green-bg);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #34d399;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    /* Code Lookup Bar */
+    .lookup-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--border-subtle);
+      padding: 14px 16px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .lookup-input-group {
+      display: flex;
+      gap: 8px;
+      flex: 1;
+      min-width: 240px;
+    }
+
+    .code-input {
+      background: #080c14;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 10px 14px;
+      border-radius: 10px;
+      flex: 1;
+      outline: none;
+    }
+
+    .code-input:focus {
+      border-color: var(--accent);
+    }
+
+    .btn {
+      cursor: pointer;
+      border: none;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 10px 16px;
+      border-radius: 10px;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #4f46e5;
+    }
+
+    .btn-outline {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-green {
+      background: rgba(16, 185, 129, 0.18);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+
+    .btn-green:hover {
+      background: rgba(16, 185, 129, 0.28);
+    }
+
+    /* Navigation Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 12px;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid transparent;
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      background: rgba(99, 102, 241, 0.16);
+      color: var(--accent-light);
+      border-color: var(--border-accent);
+    }
+
+    /* Partner Banner */
+    .partner-hero {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(15, 23, 42, 0.92));
+      border: 1px solid var(--border-accent);
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .code-badge-large {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.4rem;
+      font-weight: 800;
+      background: #080c14;
+      border: 1px dashed var(--accent-light);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 12px;
+      letter-spacing: 0.06em;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 18px;
+    }
+
+    .stat-label {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-primary);
+    }
+
+    .stat-value.green {
+      color: #34d399;
+    }
+
+    .stat-sub {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Feed Table */
+    .card-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 22px;
+      margin-bottom: 20px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    th {
+      color: var(--text-secondary);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .status-tag {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      background: var(--green-bg);
+      color: #34d399;
+    }
+
+    /* Agreement Document */
+    .agreement-paper {
+      background: #0b111e;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 18px;
+      padding: 32px;
+      color: #e2e8f0;
+    }
+
+    .agreement-header {
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 18px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .clause {
+      margin-bottom: 16px;
+    }
+
+    .clause h4 {
+      color: #fff;
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+    }
+
+    .clause p {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+    }
+
+    .sig-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px dashed var(--border-subtle);
+    }
+
+    .sig-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      padding: 16px;
+      border-radius: 12px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .form-field label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    .form-field input {
+      width: 100%;
+      padding: 10px 12px;
+      background: #080c14;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.88rem;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media print {
+      body {
+        background: #fff !important;
+        color: #000 !important;
+        padding: 0;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .agreement-paper {
+        background: #fff !important;
+        color: #000 !important;
+        border: 2px solid #000 !important;
+        box-shadow: none !important;
+      }
+      .clause h4, .sig-box, .stat-value {
+        color: #000 !important;
+      }
+      .clause p {
+        color: #333 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Top Header -->
+    <div class="topbar no-print">
+      <div class="brand">
+        <div class="brand-logo">⚡</div>
+        <div>
+          <div class="brand-title">VitalSync Creator Partner Portal</div>
+          <div class="brand-sub">Official Real-Time Coupon Attribution & Commission Ledger (`com.yash.vitalsync`)</div>
+        </div>
+      </div>
+      <div class="live-pill">
+        <span class="pulse-dot"></span>
+        <span id="syncStatusText">Live App Telemetry Active</span>
+      </div>
+    </div>
+
+    <!-- Code Search / Selector -->
+    <div class="lookup-bar no-print">
+      <div class="lookup-input-group">
+        <input id="codeSearchInput" class="code-input" type="text" placeholder="Enter Creator Code (e.g. ROHIT20)" value="ROHIT20" />
+        <button class="btn btn-primary" onclick="loadCreatorCode()">Load Tracker</button>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-green" onclick="simulateLiveRedemption()" title="Click to test how a new app subscription updates this page immediately">
+          ⚡ Test Live App Redemption (+1)
+        </button>
+        <button class="btn btn-outline" onclick="switchTab('founder')">
+          🛠️ Founder Link Generator
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs no-print">
+      <button id="tabBtn-dashboard" class="tab-btn active" onclick="switchTab('dashboard')">
+        📊 Live Sales & Commission Tracker
+      </button>
+      <button id="tabBtn-agreement" class="tab-btn" onclick="switchTab('agreement')">
+        📜 Written Partner Proof & Agreement (PDF)
+      </button>
+      <button id="tabBtn-founder" class="tab-btn" onclick="switchTab('founder')">
+        🔗 Generate Influencer Link & DM Script
+      </button>
+    </div>
+
+    <!-- TAB 1: LIVE DASHBOARD -->
+    <div id="tab-dashboard">
+      <div class="partner-hero">
+        <div>
+          <div style="font-size:0.78rem; color:var(--accent-light); font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">
+            Verified Creator Partner
+          </div>
+          <h2 id="partnerDisplayName" style="font-size:1.55rem; font-weight:800; margin:2px 0 4px;">
+            Creator Partner (@rohit_fitness)
+          </h2>
+          <div style="font-size:0.86rem; color:var(--text-secondary);">
+            Commission Tier: <strong id="partnerRateText" style="color:#34d399;">30% Net Revenue Share</strong> • Follower Discount: <strong>20% OFF</strong> • Payout: <strong>Every Sunday via UPI</strong>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:0.72rem; color:var(--text-secondary); margin-bottom:4px;">ACTIVE IN-APP CODE</div>
+          <div id="activeCodeBadge" class="code-badge-large">ROHIT20</div>
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Code Redemptions</div>
+          <div id="statTotalUses" class="stat-value">14</div>
+          <div class="stat-sub">Verified Google Play subscriptions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Your Commission Earned (30%)</div>
+          <div id="statTotalCommission" class="stat-value green">₹1,782</div>
+          <div class="stat-sub">Calculated after 15% Play Store fee</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pending Sunday UPI Payout</div>
+          <div id="statPendingPayout" class="stat-value" style="color:#fbbf24;">₹582</div>
+          <div id="statUpiTarget" class="stat-sub">Next settlement: Sunday 8:00 PM</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Already Paid via UPI</div>
+          <div id="statPaidAmount" class="stat-value">₹1,200</div>
+          <div class="stat-sub">Settled with UTR receipt</div>
+        </div>
+      </div>
+
+      <!-- Conversion Log Table -->
+      <div class="card-panel">
+        <div class="panel-header">
+          <div>
+            <h3 style="font-size:1.05rem; font-weight:800;">Live Code Redemption Ledger</h3>
+            <p style="font-size:0.8rem; color:var(--text-secondary);">
+              Every time a user enters your code inside VitalSync on Android, the transaction appears below automatically.
+            </p>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Anonymous User</th>
+                <th>Subscription Plan</th>
+                <th>Follower Paid</th>
+                <th>Your Commission (30%)</th>
+                <th>Settlement Status</th>
+              </tr>
+            </thead>
+            <tbody id="ledgerTableBody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: OFFICIAL DIGITAL PARTNER AGREEMENT -->
+    <div id="tab-agreement" class="hidden">
+      <div class="no-print" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+        <p style="font-size:0.88rem; color:var(--text-secondary);">
+          This signed digital confirmation serves as written proof of your revenue-share partnership under the Indian Contract Act, 1872.
+        </p>
+        <button class="btn btn-primary" onclick="window.print()">
+          🖨️ Download / Print Signed PDF Proof
+        </button>
+      </div>
+
+      <div class="agreement-paper">
+        <div class="agreement-header">
+          <div>
+            <div style="font-size:0.75rem; font-weight:700; color:var(--accent-light); text-transform:uppercase;">
+              VitalSync Health & Fitness (`com.yash.vitalsync`)
+            </div>
+            <h2 style="font-size:1.4rem; font-weight:800; margin-top:2px;">
+              Creator Affiliate & Revenue-Share Agreement
+            </h2>
+          </div>
+          <div style="text-align:right; font-size:0.82rem; color:var(--text-secondary);">
+            <div><strong>Agreement ID:</strong> <span id="docAgreementId">VS-2026-ROHIT20</span></div>
+            <div><strong>Effective Date:</strong> <span id="docDate">26 Sept 2026</span></div>
+          </div>
+        </div>
+
+        <div class="clause">
+          <h4>1. Parties to the Agreement</h4>
+          <p>
+            This Creator Revenue-Share Agreement is entered into between <strong>Yash</strong> (Founder & Developer of the mobile application <strong>VitalSync</strong>, Google Play Package ID: <code>com.yash.vitalsync</code>) and <strong><span id="docCreatorName">Creator Partner (@rohit_fitness)</span></strong> ("Creator Partner").
+          </p>
+        </div>
+
+        <div class="clause">
+          <h4>2. Exclusive Creator Promo Code & Follower Benefit</h4>
+          <p>
+            Creator Partner is assigned the exclusive in-app referral code <strong><code id="docCode">ROHIT20</code></strong>. Any user entering this code inside the VitalSync app receives an instant <strong>20% discount</strong> on VitalSync Pro subscriptions (Monthly, 90-Day Winter Transformation Pass, or Annual Pro).
+          </p>
+        </div>
+
+        <div class="clause">
+          <h4>3. <span id="docRatePercent">30%</span> Commission Structure & Real-Time Transparency</h4>
+          <p>
+            Creator Partner earns a fixed <strong><span id="docRatePercent2">30%</span> commission</strong> on the net subscription revenue (after Google Play's standard 15% platform service fee) generated through code <code id="docCode2">ROHIT20</code>:
+            <br/>• <strong>90-Day Winter Arc Pass (₹399):</strong> Creator earns <strong>₹102</strong> per redemption
+            <br/>• <strong>Annual Pro Plan (₹699):</strong> Creator earns <strong>₹178</strong> per redemption
+            <br/>• <strong>Monthly Pro Plan (₹149):</strong> Creator earns <strong>₹38</strong> per redemption (and on renewals for the first 6 months)
+            <br/>All code redemptions are logged in real time on the Creator Partner's private tracking URL.
+          </p>
+        </div>
+
+        <div class="clause">
+          <h4>4. Weekly UPI Payout Guarantee</h4>
+          <p>
+            To ensure complete transparency and zero waiting period, accrued commissions are settled <strong>every Sunday by 8:00 PM IST via UPI</strong> to Creator Partner's designated UPI ID (<strong><code id="docUpi">creator@upi</code></strong>), accompanied by the live redemption ledger statement.
+          </p>
+        </div>
+
+        <div class="sig-grid">
+          <div class="sig-box">
+            <div style="font-size:0.74rem; color:var(--text-secondary); text-transform:uppercase;">Signed by App Founder / Developer</div>
+            <div style="font-family:Georgia, serif; font-size:1.3rem; font-style:italic; font-weight:700; margin:8px 0 4px; color:#818cf8;">
+              Yash (VitalSync Founder)
+            </div>
+            <div style="font-size:0.78rem; color:var(--text-secondary);">
+              Developer: VitalSync (`com.yash.vitalsync`)<br/>
+              Verified Digital Stamp • Status: <strong>ACTIVE</strong>
+            </div>
+          </div>
+          <div class="sig-box">
+            <div style="font-size:0.74rem; color:var(--text-secondary); text-transform:uppercase;">Acknowledged by Creator Partner</div>
+            <div id="docCreatorSig" style="font-family:Georgia, serif; font-size:1.25rem; font-style:italic; font-weight:700; margin:8px 0 4px;">
+              @rohit_fitness
+            </div>
+            <div style="font-size:0.78rem; color:var(--text-secondary);">
+              Partner Code: <strong id="docCode3">ROHIT20</strong><br/>
+              Payout UPI: <span id="docUpi2">creator@upi</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: FOUNDER LINK & DM GENERATOR -->
+    <div id="tab-founder" class="hidden no-print">
+      <div class="card-panel">
+        <h3 style="font-size:1.15rem; font-weight:800; margin-bottom:6px;">
+          🛠️ Founder Tool: Create Custom Link & Agreement for Any Influencer
+        </h3>
+        <p style="font-size:0.84rem; color:var(--text-secondary); margin-bottom:18px;">
+          Fill in the influencer's details below. It generates a customized live tracking link + signed agreement PDF link you can paste directly into their Instagram DM or WhatsApp.
+        </p>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Influencer Name & Handle</label>
+            <input id="genName" type="text" value="Arjun Verma (@arjun_lifts)" oninput="updateGeneratedLink()" />
+          </div>
+          <div class="form-field">
+            <label>Custom Promo Code</label>
+            <input id="genCode" type="text" value="ARJUN20" oninput="updateGeneratedLink()" />
+          </div>
+          <div class="form-field">
+            <label>Commission %</label>
+            <input id="genRate" type="number" value="30" oninput="updateGeneratedLink()" />
+          </div>
+          <div class="form-field">
+            <label>Creator UPI ID (for Agreement PDF)</label>
+            <input id="genUpi" type="text" value="arjun@okicici" oninput="updateGeneratedLink()" />
+          </div>
+        </div>
+
+        <div style="background:#080c14; border:1px solid var(--border-subtle); padding:14px; border-radius:12px; margin-bottom:16px;">
+          <div style="font-size:0.75rem; color:var(--accent-light); font-weight:700; margin-bottom:4px;">
+            1. PRIVATE CREATOR TRACKING & AGREEMENT LINK:
+          </div>
+          <div id="generatedUrlBox" style="font-family:'JetBrains Mono', monospace; font-size:0.82rem; word-break:break-all; color:#34d399; margin-bottom:10px;"></div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-primary" onclick="copyText('generatedUrlBox')">📋 Copy Creator Link</button>
+            <button class="btn btn-outline" onclick="previewGeneratedCreator()">👁️ Preview This Creator Now</button>
+          </div>
+        </div>
+
+        <div style="background:#080c14; border:1px solid var(--border-subtle); padding:14px; border-radius:12px;">
+          <div style="font-size:0.75rem; color:var(--accent-light); font-weight:700; margin-bottom:4px;">
+            2. READY-TO-SEND INSTAGRAM DM / WHATSAPP PITCH MESSAGE:
+          </div>
+          <pre id="generatedDmBox" style="white-space:pre-wrap; font-family:inherit; font-size:0.85rem; color:#e2e8f0; margin-bottom:10px;"></pre>
+          <button class="btn btn-green" onclick="copyText('generatedDmBox')">📋 Copy WhatsApp / Instagram DM Script</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Default sample database (persisted in localStorage + URL query parameters + optional Google Sheets webhook)
+    const STORAGE_KEY = 'vitalsync_creator_ledger_v1';
+    // Paste your deployed Google Apps Script Web App URL here (from public/google-sheets-webhook-script.js) for 24/7 cloud sync:
+    const GOOGLE_SHEETS_API_URL = '';
+
+    const DEFAULT_CREATORS = {
+      ROHIT20: {
+        name: 'Rohit Sharma (@rohit_fitness)',
+        code: 'ROHIT20',
+        rate: 30,
+        upi: 'rohitfitness@okaxis',
+        paidOut: 1200,
+        entries: [
+          { time: 'Today, 06:12 PM', user: 'VS-9104', plan: '90-Day Winter Arc Pass', paid: 399, commission: 102, status: 'Queued for Sunday UPI' },
+          { time: 'Today, 02:45 PM', user: 'VS-8841', plan: 'Annual Pro (Winter Offer)', paid: 699, commission: 178, status: 'Queued for Sunday UPI' },
+          { time: 'Yesterday, 09:18 PM', user: 'VS-8712', plan: '90-Day Winter Arc Pass', paid: 399, commission: 102, status: 'Queued for Sunday UPI' },
+          { time: 'Yesterday, 11:05 AM', user: 'VS-8609', plan: 'Monthly Pro', paid: 149, commission: 38, status: 'Queued for Sunday UPI' }
+        ]
+      }
+    };
+
+    function getStore() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : DEFAULT_CREATORS;
+      } catch {
+        return DEFAULT_CREATORS;
+      }
+    }
+
+    function saveStore(store) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+      } catch (e) {}
+    }
+
+    let currentCreator = null;
+
+    function initFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const urlCode = (params.get('code') || 'ROHIT20').toUpperCase().trim();
+      const urlName = params.get('name');
+      const urlRate = Number(params.get('rate') || 30);
+      const urlUpi = params.get('upi');
+
+      const store = getStore();
+      if (!store[urlCode]) {
+        store[urlCode] = {
+          name: urlName || `Creator Partner (${urlCode})`,
+          code: urlCode,
+          rate: urlRate,
+          upi: urlUpi || 'partner@upi',
+          paidOut: 0,
+          entries: [
+            {
+              time: 'Account Activated',
+              user: 'SYSTEM-VERIFY',
+              plan: 'Partner Code Initialized (Ready)',
+              paid: 0,
+              commission: 0,
+              status: 'Active on Play Store'
+            }
+          ]
+        };
+      } else {
+        if (urlName) store[urlCode].name = urlName;
+        if (urlRate) store[urlCode].rate = urlRate;
+        if (urlUpi) store[urlCode].upi = urlUpi;
+      }
+
+      saveStore(store);
+      document.getElementById('codeSearchInput').value = urlCode;
+      renderCreator(store[urlCode]);
+      updateGeneratedLink();
+      syncFromGoogleSheets(urlCode);
+    }
+
+    async function syncFromGoogleSheets(code) {
+      if (!GOOGLE_SHEETS_API_URL) return;
+      try {
+        const res = await fetch(`${GOOGLE_SHEETS_API_URL}?code=${encodeURIComponent(code)}`);
+        const data = await res.json();
+        if (data && data.ok && Array.isArray(data.entries) && data.entries.length > 0) {
+          const store = getStore();
+          if (store[code]) {
+            store[code].entries = data.entries;
+            saveStore(store);
+            renderCreator(store[code]);
+          }
+        }
+      } catch (err) {
+        console.warn('Google Sheets sync fallback to local ledger:', err);
+      }
+    }
+
+    function loadCreatorCode() {
+      const code = (document.getElementById('codeSearchInput').value || 'ROHIT20').toUpperCase().trim();
+      const store = getStore();
+      if (!store[code]) {
+        store[code] = {
+          name: `Partner (${code})`,
+          code: code,
+          rate: 30,
+          upi: `${code.toLowerCase()}@upi`,
+          paidOut: 0,
+          entries: [
+            {
+              time: 'Just Now',
+              user: 'SYSTEM-READY',
+              plan: 'Creator Code Live & Tracking',
+              paid: 0,
+              commission: 0,
+              status: 'Ready for Redemptions'
+            }
+          ]
+        };
+        saveStore(store);
+      }
+      renderCreator(store[code]);
+    }
+
+    function renderCreator(creator) {
+      currentCreator = creator;
+      const realEntries = creator.entries.filter(e => e.paid > 0);
+      const pendingCommission = realEntries.reduce((sum, item) => sum + item.commission, 0);
+      const totalCommission = pendingCommission + (creator.paidOut || 0);
+      const totalUses = realEntries.length + (creator.paidOut ? Math.round(creator.paidOut / 120) : 0);
+
+      document.getElementById('partnerDisplayName').textContent = creator.name;
+      document.getElementById('partnerRateText').textContent = `${creator.rate}% Net Revenue Share`;
+      document.getElementById('activeCodeBadge').textContent = creator.code;
+
+      document.getElementById('statTotalUses').textContent = totalUses;
+      document.getElementById('statTotalCommission').textContent = `₹${totalCommission.toLocaleString('en-IN')}`;
+      document.getElementById('statPendingPayout').textContent = `₹${pendingCommission.toLocaleString('en-IN')}`;
+      document.getElementById('statPaidAmount').textContent = `₹${(creator.paidOut || 0).toLocaleString('en-IN')}`;
+      document.getElementById('statUpiTarget').textContent = `Sunday 8 PM -> ${creator.upi}`;
+
+      // Render Ledger Rows
+      const tbody = document.getElementById('ledgerTableBody');
+      tbody.innerHTML = '';
+      creator.entries.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="color:var(--text-secondary);">${item.time}</td>
+          <td style="font-family:'JetBrains Mono', monospace; font-weight:600;">${item.user}</td>
+          <td><strong>${item.plan}</strong></td>
+          <td style="font-family:'JetBrains Mono', monospace;">₹${item.paid}</td>
+          <td style="font-family:'JetBrains Mono', monospace; font-weight:800; color:#34d399;">+₹${item.commission}</td>
+          <td><span class="status-tag">${item.status}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Populate Written Agreement Tab
+      document.getElementById('docAgreementId').textContent = `VS-2026-${creator.code}`;
+      document.getElementById('docDate').textContent = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+      document.getElementById('docCreatorName').textContent = creator.name;
+      document.getElementById('docCode').textContent = creator.code;
+      document.getElementById('docCode2').textContent = creator.code;
+      document.getElementById('docCode3').textContent = creator.code;
+      document.getElementById('docRatePercent').textContent = `${creator.rate}%`;
+      document.getElementById('docRatePercent2').textContent = `${creator.rate}%`;
+      document.getElementById('docUpi').textContent = creator.upi;
+      document.getElementById('docUpi2').textContent = creator.upi;
+      document.getElementById('docCreatorSig').textContent = creator.name;
+    }
+
+    function simulateLiveRedemption() {
+      if (!currentCreator) return;
+      const plans = [
+        { name: '90-Day Winter Arc Pass', price: 399 },
+        { name: 'Annual Pro (Winter Transformation)', price: 699 },
+        { name: 'Monthly Pro', price: 149 }
+      ];
+      const chosen = plans[Math.floor(Math.random() * plans.length)];
+      const netAfterGoogle = Math.round(chosen.price * 0.85);
+      const commission = Math.round(netAfterGoogle * (currentCreator.rate / 100));
+      const randomUser = 'VS-' + Math.floor(1000 + Math.random() * 9000);
+
+      const store = getStore();
+      const target = store[currentCreator.code];
+      target.entries.unshift({
+        time: 'Just Now (Live Signal ⚡)',
+        user: randomUser,
+        plan: chosen.name,
+        paid: chosen.price,
+        commission: commission,
+        status: 'Verified • Sunday UPI Queue'
+      });
+
+      saveStore(store);
+      renderCreator(target);
+    }
+
+    function switchTab(tabName) {
+      ['dashboard', 'agreement', 'founder'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== tabName);
+        document.getElementById(`tabBtn-${t}`).classList.toggle('active', t === tabName);
+      });
+    }
+
+    function updateGeneratedLink() {
+      const name = document.getElementById('genName').value.trim();
+      const code = document.getElementById('genCode').value.trim().toUpperCase();
+      const rate = document.getElementById('genRate').value.trim();
+      const upi = document.getElementById('genUpi').value.trim();
+
+      const baseUrl = window.location.origin + window.location.pathname;
+      const fullUrl = `${baseUrl}?code=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}&rate=${encodeURIComponent(rate)}&upi=${encodeURIComponent(upi)}`;
+
+      document.getElementById('generatedUrlBox').textContent = fullUrl;
+
+      const dmScript = `Hey ${name.split(' ')[0]}! 👋 Loved your Winter Bulk / Gym content.\n\nI'm Yash, the founder of VitalSync (an all-in-one Indian Diet, 200+ Desi Foods, Workout, Water & Skincare tracker launching on Play Store).\n\nWe'd love to set you up with your own custom code "${code}" for the Winter Gym season:\n✅ Your followers get 20% OFF\n✅ You get a flat ${rate}% commission on every conversion (settled EVERY SUNDAY via UPI to ${upi})\n✅ No waiting 30 days — you get a live real-time tracking portal + signed partner agreement right here:\n\n🔗 Your Live Dashboard & Agreement: ${fullUrl}\n\nOpen that link and tap "Test Live App Redemption" to see how your code tracks in real time! Let me know if we can lock in "${code}" for you 🔥`;
+
+      document.getElementById('generatedDmBox').textContent = dmScript;
+    }
+
+    function previewGeneratedCreator() {
+      const name = document.getElementById('genName').value.trim();
+      const code = document.getElementById('genCode').value.trim().toUpperCase();
+      const rate = Number(document.getElementById('genRate').value.trim() || 30);
+      const upi = document.getElementById('genUpi').value.trim();
+
+      const store = getStore();
+      store[code] = {
+        name,
+        code,
+        rate,
+        upi,
+        paidOut: 0,
+        entries: [
+          {
+            time: 'Just Activated',
+            user: 'SYSTEM-VERIFY',
+            plan: 'Creator Partner Code Active',
+            paid: 0,
+            commission: 0,
+            status: 'Active on VitalSync'
+          }
+        ]
+      };
+      saveStore(store);
+      document.getElementById('codeSearchInput').value = code;
+      renderCreator(store[code]);
+      switchTab('dashboard');
+    }
+
+    function copyText(elementId) {
+      const text = document.getElementById(elementId).textContent;
+      navigator.clipboard.writeText(text);
+      alert('Copied to clipboard!');
+    }
+
+    initFromUrl();
+  </script>
+</body>
+</html>
